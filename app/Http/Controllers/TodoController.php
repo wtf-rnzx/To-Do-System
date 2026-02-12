@@ -11,7 +11,7 @@ class TodoController extends Controller
     // Display all todos
     public function index()
     {
-        $todos = Todo::latest()->get();
+        $todos = Todo::latest()->paginate(6); 
         return view('todos.index', compact('todos'));
     }
 

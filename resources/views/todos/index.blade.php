@@ -101,6 +101,11 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        {{-- Pagination --}}
+                        <div class="mt-6">
+                            {{ $todos->links() }}
+                        </div>
                     @else
                         <p class="text-gray-500 text-center py-8">No todos yet. Create your first one!</p>
                     @endif
