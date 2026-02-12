@@ -94,6 +94,11 @@ class TodoController extends Controller
         return redirect()->route('todos.index')->with('success', 'Todo deleted successfully!');
     }
 
+    public function show(Todo $todo)
+    {
+        return view('todos.show', compact('todo'));
+    }
+
     // Toggle completion status
     public function toggle(Todo $todo)
     {

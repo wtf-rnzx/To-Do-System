@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
     // Todo routes
     Route::resource('todos', TodoController::class);
     Route::patch('todos/{todo}/toggle', [TodoController::class, 'toggle'])->name('todos.toggle');
+    Route::get('/todos/{todo}', [TodoController::class, 'show'])->name('todos.show');
 });
 
 require __DIR__.'/auth.php';

@@ -104,19 +104,27 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                                                 {{ $todo->created_at->format('M d, Y') }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium ">
+                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                                 <!-- Action Buttons -->
-                                                <a 
-                                                    href="{{ route('todos.edit', $todo) }}" 
-                                                    class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                                <a
+                                                    href="{{ route('todos.show', $todo) }}"
+                                                    class="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                                                >
+                                                    Details
+                                                </a>
+
+                                                <a
+                                                    href="{{ route('todos.edit', $todo) }}"
+                                                    class="ml-3 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                                 >
                                                     Edit
                                                 </a>
-                                                <button 
-                                                    type="button" 
-                                                    x-data 
-                                                    @click="$dispatch('open-modal', 'delete-todo-{{ $todo->id }}')" 
-                                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 ml-2"
+
+                                                <button
+                                                    type="button"
+                                                    x-data
+                                                    @click="$dispatch('open-modal', 'delete-todo-{{ $todo->id }}')"
+                                                    class="ml-3 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                                 >
                                                     Delete
                                                 </button>
