@@ -9,10 +9,26 @@ use Illuminate\Routing\Controller;
 class TodoController extends Controller
 {
     // Display all todos
-    public function index()
+    public function index(Request $request)
     {
-        $todos = Todo::latest()->paginate(6); 
-        return view('todos.index', compact('todos'));
+        $status = $request->query('status', 'all'); // all|completed|ongoing
+
+        if (!in_array($status, ['all', 'completed', 'ongoing'], true)) {
+            $status = 'all';
+        }
+
+        $query = Todo::query()->latest();
+
+        if ($status === 'completed') {
+            $query->where('completed', true);
+        } elseif ($status === 'ongoing') {
+            $query->where('completed', false);
+
+        }
+
+        $todos = $query->paginate(6)->appends(request()->query());
+
+        return view('todos.index', compact('todos', 'status'));
     }
 
     // Show create form

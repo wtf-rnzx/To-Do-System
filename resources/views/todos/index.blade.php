@@ -19,6 +19,34 @@
                 </div>
             @endif
 
+            <div class="flex items-center justify-end mb-4">
+                <form method="GET" action="{{ route('todos.index') }}" class="flex items-center gap-2">
+                    <label for="status" class="text-sm text-gray-600 dark:text-gray-300">
+                        Filter:
+                    </label>
+
+                    <select
+                        id="status"
+                        name="status"
+                        onchange="this.form.submit()"
+                        class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                    >
+                        <option value="all" {{ ($status ?? request('status', 'all')) === 'all' ? 'selected' : '' }}>All</option>
+                        <option value="ongoing" {{ ($status ?? request('status', 'all')) === 'ongoing' ? 'selected' : '' }}>Ongoing</option>
+                        <option value="completed" {{ ($status ?? request('status', 'all')) === 'completed' ? 'selected' : '' }}>Completed</option>
+                    </select>
+
+                    @if(($status ?? request('status', 'all')) !== 'all')
+                        <a
+                            href="{{ route('todos.index') }}"
+                            class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white underline"
+                        >
+                            Clear
+                        </a>
+                    @endif
+                </form>
+            </div>
+
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     @if($todos->count() > 0)
