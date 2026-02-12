@@ -61,6 +61,23 @@
                             @enderror
                         </div>
 
+                        <!-- Description Input -->
+                        <div class="mb-4">
+                            <label for="description" class="block text-sm font-medium mb-2">
+                                Description
+                            </label>
+                            <textarea
+                                name="description"
+                                id="description"
+                                rows="4"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                placeholder="Update task details..."
+                            >{{ old('description', $todo->description) }}</textarea>
+                            @error('description')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
                         <!-- Buttons -->
                         <div class="flex space-x-3">
                             <button 

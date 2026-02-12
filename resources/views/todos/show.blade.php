@@ -37,6 +37,13 @@
                         </div>
 
                         <div>
+                            <div class="text-xs uppercase text-gray-500 dark:text-gray-400">Description</div>
+                            <div class="text-sm whitespace-pre-line">
+                                {{ $todo->description ?: 'No description' }}
+                            </div>
+                        </div>
+
+                        <div>
                             <div class="text-xs uppercase text-gray-500 dark:text-gray-400">Due Date</div>
                             <div class="text-sm">
                                 {{ $todo->due_date ? $todo->due_date->format('M d, Y') : 'No due date' }}
@@ -53,6 +60,7 @@
                             <div class="text-sm">{{ $todo->updated_at->format('M d, Y') }}</div>
                         </div>
                     </div>
+                   
                 </div>
             </div>
         </div>

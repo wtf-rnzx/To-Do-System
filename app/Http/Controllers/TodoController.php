@@ -43,6 +43,7 @@ class TodoController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255', 'unique:todos,title'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'due_date' => ['nullable', 'date'],
         ], [
             'title.unique' => 'A task with this title already exists.',
@@ -50,6 +51,7 @@ class TodoController extends Controller
 
         Todo::create([
             'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
             'due_date' => $validated['due_date'] ?? null,
         ]);
 
@@ -72,6 +74,7 @@ class TodoController extends Controller
                 'max:255',
                 Rule::unique('todos', 'title')->ignore($todo->id),
             ],
+            'description' => ['nullable', 'string', 'max:2000'],
             'due_date' => ['nullable', 'date'],
             'completed' => ['nullable'],
         ], [
@@ -80,6 +83,7 @@ class TodoController extends Controller
 
         $todo->update([
             'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
             'due_date' => $validated['due_date'] ?? null,
             'completed' => $request->boolean('completed'),
         ]);
