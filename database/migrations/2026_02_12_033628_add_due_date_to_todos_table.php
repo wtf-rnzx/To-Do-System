@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('todos', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
+        Schema::table('todos', function (Blueprint $table) {
+            //
             $table->date('due_date')->nullable()->after('completed');
-            $table->boolean('completed')->default(false);
-            $table->timestamps();
         });
     }
 
@@ -25,7 +22,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('todos');
+        Schema::table('todos', function (Blueprint $table) {
+            // ...existing code...
+            $table->dropColumn('due_date');
+        });
 
     }
 };

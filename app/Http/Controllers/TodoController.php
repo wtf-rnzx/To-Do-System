@@ -24,13 +24,14 @@ class TodoController extends Controller
     // Store new todo
     public function store(Request $request)
     {
-        $request->validate([
-            'title' => 'required|max:255',
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'due_date' => ['nullable', 'date'],
         ]);
 
         Todo::create([
-            'title' => $request->title,
-            'completed' => false,
+            'title' => $validated['title'],
+            'due_date' => $validated['due_date'] ?? null,
         ]);
 
         return redirect()->route('todos.index')->with('success', 'Todo created successfully!');
@@ -45,13 +46,16 @@ class TodoController extends Controller
     // Update todo
     public function update(Request $request, Todo $todo)
     {
-        $request->validate([
-            'title' => 'required|max:255',
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'due_date' => ['nullable', 'date'],
+            'completed' => ['nullable'],
         ]);
 
         $todo->update([
-            'title' => $request->title,
-            'completed' => $request->has('completed'),
+            'title' => $validated['title'],
+            'due_date' => $validated['due_date'] ?? null,
+            'completed' => $request->boolean('completed'),
         ]);
 
         return redirect()->route('todos.index')->with('success', 'Todo updated successfully!');
