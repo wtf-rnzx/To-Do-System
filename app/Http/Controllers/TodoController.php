@@ -94,7 +94,7 @@ class TodoController extends Controller
     // Delete todo
     public function destroy(Todo $todo)
     {
-        $todo->delete();
+        $todo->delete(); // soft deletes
         return redirect()->route('todos.index')->with('success', 'Todo deleted successfully!');
     }
 
