@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Todo;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 
 class TodoController extends Controller
 {
@@ -41,8 +42,10 @@ class TodoController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255', 'unique:todos,title'],
             'due_date' => ['nullable', 'date'],
+        ], [
+            'title.unique' => 'A task with this title already exists.',
         ]);
 
         Todo::create([
@@ -63,9 +66,16 @@ class TodoController extends Controller
     public function update(Request $request, Todo $todo)
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('todos', 'title')->ignore($todo->id),
+            ],
             'due_date' => ['nullable', 'date'],
             'completed' => ['nullable'],
+        ], [
+            'title.unique' => 'A task with this title already exists.',
         ]);
 
         $todo->update([
