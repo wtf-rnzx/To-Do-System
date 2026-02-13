@@ -38,7 +38,7 @@
 
                     @if(($status ?? request('status', 'all')) !== 'all')
                         <a
-                            href="{{ route('todos.index') }}"
+                            href="{{ route('todos.index') }}
                             class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white underline"
                         >
                             Clear
@@ -51,7 +51,7 @@
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     @if($todos->count() > 0)
                         <div class="overflow-x-auto">
-                            <table class="min-w-full w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                            <table class="min-w-full w-full divide-y divide-gray-200 dark:divide-gray-700" style="table-layout: fixed;">
                                 <thead class="bg-gray-50 dark:bg-gray-700">
                                     <tr>
                                         <th scope="col" class="w-20 px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -100,9 +100,13 @@
                                             </td>
                                             <td class="px-6 py-4 align-top text-center">
                                                 <!-- Todo Title -->
-                                                <span class="text-sm break-words {{ $todo->completed ? 'line-through text-gray-500' : 'text-gray-900 dark:text-gray-100' }}">
+                                                <div
+                                                    class="w-full text-sm whitespace-normal overflow-hidden [overflow-wrap:anywhere]"
+                                                    style="word-break: break-word;"
+                                                    title="{{ $todo->title }}"
+                                                >
                                                     {{ $todo->title }}
-                                                </span>
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                                                 {{ $todo->due_date ? $todo->due_date->format('M d, Y') : 'No due date' }}
