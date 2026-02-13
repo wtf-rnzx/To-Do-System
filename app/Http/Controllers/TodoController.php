@@ -6,7 +6,6 @@ use App\Models\Todo;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rule;
-use PhpParser\Node\Stmt\TryCatch;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -25,7 +24,9 @@ class TodoController extends Controller
                 $status = 'all';
             }
 
-            $query = Todo::query()->latest();
+            $query = Todo::query()
+                ->where('user_id', auth()->id())
+                ->latest();
 
             if ($status === 'completed') {
                 $query->where('completed', true);
@@ -69,6 +70,7 @@ class TodoController extends Controller
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
                 'due_date' => $validated['due_date'] ?? null,
+                'user_id' => auth()->id(),
             ]);
     
             return redirect()->route('todos.index')->with('success', 'Todo created successfully!');
@@ -82,7 +84,7 @@ class TodoController extends Controller
     // Show edit form
     public function edit(Todo $todo)
     {
-        Log::info('Editing todo with ID: ' . $todo->id);
+        abort_unless($todo->user_id === auth()->id(), 403);
 
         try{
             return view('todos.edit', compact('todo'));
@@ -96,7 +98,8 @@ class TodoController extends Controller
     // Update todo
     public function update(Request $request, Todo $todo)
     {
-        Log::info('Updating todo with ID: ' . $todo->id);
+        abort_unless($todo->user_id === auth()->id(), 403);
+
         try{
             $validated = $request->validate([
             'title' => [
@@ -131,6 +134,8 @@ class TodoController extends Controller
     // Delete todo
     public function destroy(Todo $todo)
     {
+        abort_unless($todo->user_id === auth()->id(), 403);
+
         Log::info('Deleting todo with ID: ' . $todo->id);
         try{
             $todo->delete(); // soft deletes
@@ -143,6 +148,8 @@ class TodoController extends Controller
 
     public function show(Todo $todo)
     {
+        abort_unless($todo->user_id === auth()->id(), 403);
+
         Log::info('Showing details for todo with ID: ' . $todo->id);
         try{
             return view('todos.show', compact('todo'));
@@ -155,6 +162,8 @@ class TodoController extends Controller
     // Toggle completion status
     public function toggle(Todo $todo)
     {
+        abort_unless($todo->user_id === auth()->id(), 403);
+
         Log::info('Toggling completion status for todo with ID: ' . $todo->id);
 
         try{
