@@ -7,7 +7,7 @@
 
             <div class="flex items-center gap-2">
                 <a href="{{ route('todos.index') }}"
-                   class=" hover:bg-gray-300 text-white font-bold py-2 px-4 rounded">
+                   class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
                     Back
                 </a>
 
@@ -60,7 +60,7 @@
                             <div class="text-sm">{{ $todo->updated_at->format('M d, Y') }}</div>
                         </div>
                     </div>
-                   
+                    
                 </div>
             </div>
         </div>

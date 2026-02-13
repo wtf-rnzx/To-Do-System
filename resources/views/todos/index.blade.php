@@ -73,7 +73,13 @@
                                 </thead>
                                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     @foreach($todos as $todo)
-                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <tr
+                                            class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                            data-row-url="{{ route('todos.show', $todo) }}"
+                                            tabindex="0"
+                                            role="link"
+                                            aria-label="Open details for {{ $todo->title }}"
+                                        >
                                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                                 <!-- Toggle Complete -->
                                                 <form action="{{ route('todos.toggle', $todo) }}" method="POST">
@@ -107,15 +113,8 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                                 <!-- Action Buttons -->
                                                 <a
-                                                    href="{{ route('todos.show', $todo) }}"
-                                                    class="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-                                                >
-                                                    Details
-                                                </a>
-
-                                                <a
                                                     href="{{ route('todos.edit', $todo) }}"
-                                                    class="ml-3 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                                    class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                                 >
                                                     Edit
                                                 </a>
@@ -150,3 +149,27 @@
         </div>
     </div>
 </x-app-layout>
+
+<script>
+document.addEventListener('click', function (e) {
+    const row = e.target.closest('tr[data-row-url]');
+    if (!row) return;
+
+    // Prevent row navigation when clicking interactive elements
+    if (e.target.closest('a, button, input, select, textarea, form, [data-no-row-click]')) {
+        return;
+    }
+
+    window.location.href = row.dataset.rowUrl;
+});
+
+document.addEventListener('keydown', function (e) {
+    const row = e.target.closest('tr[data-row-url]');
+    if (!row) return;
+
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.location.href = row.dataset.rowUrl;
+    }
+});
+</script>
