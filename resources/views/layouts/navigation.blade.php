@@ -18,6 +18,13 @@
                     <x-nav-link :href="route('todos.index')" :active="request()->routeIs('todos.*')">
                         {{ __('Todos') }}
                     </x-nav-link>
+                    @auth
+                        @if(auth()->user()->usertype === 'admin')
+                            <x-nav-link :href="route('admin.userManagement')" :active="request()->routeIs('admin.userManagement')">
+                                {{ __('User Management') }}
+                            </x-nav-link>
+                        @endif
+                    @endauth
                 </div>
             </div>
 
@@ -76,6 +83,11 @@
             <x-responsive-nav-link :href="route('todos.index')" :active="request()->routeIs('todos.*')">
                 {{ __('Todos') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.userManagement')" :active="request()->routeIs('admin.userManagement')">
+                {{ __('User Management') }}
+            </x-responsive-nav-link>
+            
+            
         </div>
 
         <!-- Responsive Settings Options -->
