@@ -24,6 +24,9 @@ class TodoController extends Controller
                 $status = 'all';
             }
 
+            $from = $request->query('from');
+            $to   = $request->query('to');
+
             $query = Todo::query()
                 ->where('user_id', auth()->id())
                 ->latest();
@@ -32,18 +35,25 @@ class TodoController extends Controller
                 $query->where('completed', true);
             } elseif ($status === 'ongoing') {
                 $query->where('completed', false);
+            }
 
+            // Apply date range filter
+            if ($from) {
+                $query->where('created_at', '>=', \Carbon\Carbon::parse($from));
+            }
+            if ($to) {
+                $query->where('created_at', '<=', \Carbon\Carbon::parse($to));
             }
 
             $todos = $query->paginate(6)->appends(request()->query());
 
-            return view('todos.index', compact('todos', 'status'));
+            return view('todos.index', compact('todos', 'status', 'from', 'to'));
             }
         catch(Exception $e){
             Log::error('Error fetching todos: ' . $e->getMessage());
             return redirect()->back()->with('error', 'An error occurred while fetching todos.');
         }
-        
+
     }
 
     // Show create form

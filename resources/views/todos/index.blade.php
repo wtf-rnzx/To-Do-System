@@ -19,31 +19,57 @@
                 </div>
             @endif
 
-            <div class="flex items-center justify-end mb-4">
-                <form method="GET" action="{{ route('todos.index') }}" class="flex items-center gap-2">
-                    <label for="status" class="text-sm text-gray-600 dark:text-gray-300">
-                        Filter:
-                    </label>
-
-                    <select
-                        id="status"
-                        name="status"
-                        onchange="this.form.submit()"
-                        class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
-                    >
-                        <option value="all" {{ ($status ?? request('status', 'all')) === 'all' ? 'selected' : '' }}>All</option>
-                        <option value="ongoing" {{ ($status ?? request('status', 'all')) === 'ongoing' ? 'selected' : '' }}>Ongoing</option>
-                        <option value="completed" {{ ($status ?? request('status', 'all')) === 'completed' ? 'selected' : '' }}>Completed</option>
-                    </select>
-
-                    @if(($status ?? request('status', 'all')) !== 'all')
-                        <a
-                            href="{{ route('todos.index') }}
-                            class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white underline"
+            <div class="mb-4">
+                <form method="GET" action="{{ route('todos.index') }}" class="flex flex-wrap items-end gap-3 justify-between">
+                    {{-- Status Filter --}}
+                    <div class="flex flex-col gap-1">
+                        <label for="status" class="text-xs font-medium text-gray-600 dark:text-gray-300">Status</label>
+                        <select
+                            id="status"
+                            name="status"
+                            class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
                         >
-                            Clear
-                        </a>
-                    @endif
+                            <option value="all"       {{ ($status ?? 'all') === 'all'       ? 'selected' : '' }}>All</option>
+                            <option value="ongoing"   {{ ($status ?? 'all') === 'ongoing'   ? 'selected' : '' }}>Ongoing</option>
+                            <option value="completed" {{ ($status ?? 'all') === 'completed' ? 'selected' : '' }}>Completed</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-wrap items-end gap-3">
+                        {{-- From --}}
+                        <div class="flex flex-col gap-1">
+                            <label for="from" class="text-xs font-medium text-gray-600 dark:text-gray-300">From</label>
+                            <input
+                                type="datetime-local"
+                                id="from"
+                                name="from"
+                                value="{{ $from ?? '' }}"
+                                class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                            />
+                        </div>
+
+                        {{-- To --}}
+                        <div class="flex flex-col gap-1">
+                            <label for="to" class="text-xs font-medium text-gray-600 dark:text-gray-300">To</label>
+                            <input
+                                type="datetime-local"
+                                id="to"
+                                name="to"
+                                value="{{ $to ?? '' }}"
+                                class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                            />
+                        </div>
+
+                        {{-- Apply & Clear buttons --}}
+                        <div class="flex gap-2">
+                            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-md">
+                                Apply
+                            </button>
+                            <a href="{{ route('todos.index') }}" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-sm font-medium py-2 px-4 rounded-md">
+                                Clear
+                            </a>
+                        </div>
+                    </div>
                 </form>
             </div>
 
@@ -112,7 +138,7 @@
                                                 {{ $todo->due_date ? $todo->due_date->format('M d, Y') : 'No due date' }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
-                                                {{ $todo->created_at->format('M d, Y') }}
+                                                {{ $todo->created_at->format('M d, Y h:i A') }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                                 <!-- Action Buttons -->

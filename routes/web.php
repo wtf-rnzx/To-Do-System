@@ -44,7 +44,9 @@ Route::middleware(['auth', 'admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::get('/userManagement', [UserManagementController::class, 'index'])->name('userManagement');
-});
+        Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
+        Route::patch('/users/{user}/toggle-role', [UserManagementController::class, 'toggleRole'])->name('users.toggleRole');
+        Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+    });
 
 require __DIR__.'/auth.php';
