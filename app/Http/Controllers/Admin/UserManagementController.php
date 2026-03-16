@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 
 class UserManagementController extends Controller
@@ -38,8 +39,17 @@ class UserManagementController extends Controller
 
     public function toggleRole(User $user)
     {
+        $oldRole = $user->usertype;
         $user->usertype = $user->usertype === 'admin' ? 'user' : 'admin';
         $user->save();
+
+        ActivityLogger::log(
+            user:        auth()->user(),
+            action:      'role_updated',
+            module:      'users',
+            description: "Admin changed role of '{$user->name}' from '{$oldRole}' to '{$user->usertype}'.",
+            properties:  ['target_user_id' => $user->id, 'old_role' => $oldRole, 'new_role' => $user->usertype],
+        );
 
         return back()->with('success', "Role updated for {$user->name}.");
     }
@@ -50,8 +60,18 @@ class UserManagementController extends Controller
             return back()->with('error', 'You cannot delete your own account.');
         }
 
+        $targetName = $user->name;
+        $targetId   = $user->id;
         $user->delete();
 
-        return back()->with('success', "User {$user->name} has been deleted.");
+        ActivityLogger::log(
+            user:        auth()->user(),
+            action:      'deleted',
+            module:      'users',
+            description: "Admin deleted user account '{$targetName}'.",
+            properties:  ['deleted_user_id' => $targetId, 'deleted_user_name' => $targetName],
+        );
+
+        return back()->with('success', "User {$targetName} has been deleted.");
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
@@ -47,6 +48,8 @@ Route::middleware(['auth', 'admin'])
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
         Route::patch('/users/{user}/toggle-role', [UserManagementController::class, 'toggleRole'])->name('users.toggleRole');
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('logs.index');
     });
 
 require __DIR__.'/auth.php';
