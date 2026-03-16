@@ -4,14 +4,36 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class UserManagementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::latest()->paginate(10);
+        $role = $request->query('role', 'all'); // all|admin|user
 
-        return view('admin.users.index', compact('users'));
+        if (!in_array($role, ['all', 'admin', 'user'], true)) {
+            $role = 'all';
+        }
+
+        $date = $request->query('date');
+
+        $query = User::latest();
+
+        if ($role === 'admin') {
+            $query->where('usertype', 'admin');
+        } elseif ($role === 'user') {
+            $query->where('usertype', 'user');
+        }
+
+        // Apply date filter
+        if ($date) {
+            $query->whereDate('created_at', $date);
+        }
+
+        $users = $query->paginate(10)->appends(request()->query());
+
+        return view('admin.users.index', compact('users', 'role', 'date'));
     }
 
     public function toggleRole(User $user)

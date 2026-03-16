@@ -25,6 +25,48 @@
                         </span>
                     </div>
 
+                    <div class="mb-4">
+                        <form method="GET" action="{{ route('admin.users.index') }}" class="flex flex-wrap items-end gap-3 justify-between">
+                            {{-- Role Filter --}}
+                            <div class="flex flex-col gap-1">
+                                <label for="role" class="text-xs font-medium text-gray-600 dark:text-gray-300">Role</label>
+                                <select
+                                    id="role"
+                                    name="role"
+                                    class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                                >
+                                    <option value="all"   {{ ($role ?? 'all') === 'all'   ? 'selected' : '' }}>All</option>
+                                    <option value="admin" {{ ($role ?? 'all') === 'admin' ? 'selected' : '' }}>Admin</option>
+                                    <option value="user"  {{ ($role ?? 'all') === 'user'  ? 'selected' : '' }}>User</option>
+                                </select>
+                            </div>
+
+                            <div class="flex flex-wrap items-end gap-3">
+                                {{-- Date --}}
+                                <div class="flex flex-col gap-1">
+                                    <label for="date" class="text-xs font-medium text-gray-600 dark:text-gray-300">Date</label>
+                                    <input
+                                        type="date"
+                                        id="date"
+                                        name="date"
+                                        value="{{ $date ?? '' }}"
+                                        class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                                    />
+                                </div>
+
+                                {{-- Apply & Clear buttons --}}
+                                <div class="flex gap-2">
+                                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-md">
+                                        Apply
+                                    </button>
+                                    <a href="{{ route('admin.users.index') }}" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-sm font-medium py-2 px-4 rounded-md">
+                                        Clear
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
