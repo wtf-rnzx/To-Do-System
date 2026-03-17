@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -35,6 +36,14 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
+        ActivityLogger::log(
+            user:        $request->user(),
+            action:      'profile_updated',
+            module:      'profile',
+            description: "User '{$request->user()->name}' updated their profile.",
+            request:     $request,
+        );
+
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
@@ -48,6 +57,14 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        ActivityLogger::log(
+            user:        $user,
+            action:      'account_deleted',
+            module:      'profile',
+            description: "User '{$user->name}' deleted their own account.",
+            request:     $request,
+        );
 
         Auth::logout();
 

@@ -23,6 +23,9 @@
                             <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
                                 {{ __('Users') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('admin.logs.index')" :active="request()->routeIs('admin.logs.*')">
+                                {{ __('Activity Logs') }}
+                            </x-nav-link>
                         @endif
                     @endauth
                 </div>
@@ -124,6 +127,9 @@
                 @if(auth()->user()->usertype === 'admin')
                     <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
                         {{ __('User Management') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.logs.index')" :active="request()->routeIs('admin.logs.*')">
+                        {{ __('Activity Logs') }}
                     </x-responsive-nav-link>
                 @endif
             @endauth
