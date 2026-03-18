@@ -21,6 +21,21 @@
 
             <div class="mb-4">
                 <form method="GET" action="{{ route('todos.index') }}" class="flex flex-wrap items-end gap-3 justify-between">
+                    {{-- Smart View --}}
+                    <div class="flex flex-col gap-1">
+                        <label for="smart_view" class="text-xs font-medium text-gray-600 dark:text-gray-300">Smart View</label>
+                        <select
+                            id="smart_view"
+                            name="smart_view"
+                            class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                            <option value="all" {{ ($smartView ?? 'all') === 'all' ? 'selected' : '' }}>All</option>
+                            <option value="today" {{ ($smartView ?? 'all') === 'today' ? 'selected' : '' }}>Today</option>
+                            <option value="upcoming" {{ ($smartView ?? 'all') === 'upcoming' ? 'selected' : '' }}>Upcoming</option>
+                            <option value="overdue" {{ ($smartView ?? 'all') === 'overdue' ? 'selected' : '' }}>Overdue</option>
+                        </select>
+                    </div>
+
                     {{-- Status Filter --}}
                     <div class="flex flex-col gap-1">
                         <label for="status" class="text-xs font-medium text-gray-600 dark:text-gray-300">Status</label>
@@ -32,6 +47,21 @@
                             <option value="all"       {{ ($status ?? 'all') === 'all'       ? 'selected' : '' }}>All</option>
                             <option value="ongoing"   {{ ($status ?? 'all') === 'ongoing'   ? 'selected' : '' }}>Ongoing</option>
                             <option value="completed" {{ ($status ?? 'all') === 'completed' ? 'selected' : '' }}>Completed</option>
+                        </select>
+                    </div>
+
+                    {{-- Priority Filter --}}
+                    <div class="flex flex-col gap-1">
+                        <label for="priority" class="text-xs font-medium text-gray-600 dark:text-gray-300">Priority</label>
+                        <select
+                            id="priority"
+                            name="priority"
+                            class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                            <option value="all" {{ ($priority ?? 'all') === 'all' ? 'selected' : '' }}>All</option>
+                            <option value="high" {{ ($priority ?? 'all') === 'high' ? 'selected' : '' }}>High</option>
+                            <option value="medium" {{ ($priority ?? 'all') === 'medium' ? 'selected' : '' }}>Medium</option>
+                            <option value="low" {{ ($priority ?? 'all') === 'low' ? 'selected' : '' }}>Low</option>
                         </select>
                     </div>
 
@@ -87,13 +117,13 @@
                                             Title
                                         </th>
                                         <th scope="col" class="w-2/12 px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Priority
+                                        </th>
+                                        <th scope="col" class="w-2/12 px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             Due Date
                                         </th>
                                         <th scope="col" class="w-2/12 px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             Created
-                                        </th>
-                                        <th scope="col" class="w-2/12 px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Actions
                                         </th>
                                     </tr>
                                 </thead>
@@ -133,6 +163,28 @@
                                                 >
                                                     {{ $todo->title }}
                                                 </div>
+
+                                                <a href="{{ route('todos.show', $todo) }}" class="sr-only focus:not-sr-only focus:underline text-xs text-blue-600 dark:text-blue-400">
+                                                    Open details for {{ $todo->title }}
+                                                </a>
+
+                                                @if(($todo->subtasks_count ?? 0) > 0)
+                                                    <div class="text-xs mt-1 text-gray-500 dark:text-gray-400">
+                                                        {{ $todo->completed_subtasks_count ?? 0 }}/{{ $todo->subtasks_count }} subtasks done
+                                                    </div>
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                                                @php
+                                                    $priorityClass = match($todo->priority ?? 'medium') {
+                                                        'high' => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+                                                        'low' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                                                        default => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                                                    };
+                                                @endphp
+                                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold {{ $priorityClass }}">
+                                                    {{ ucfirst($todo->priority ?? 'medium') }}
+                                                </span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                                                 {{ $todo->due_date ? $todo->due_date->format('M d, Y') : 'No due date' }}
@@ -140,27 +192,7 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                                                 {{ $todo->created_at->format('M d, Y h:i A') }}
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                                <!-- Action Buttons -->
-                                                <a
-                                                    href="{{ route('todos.edit', $todo) }}"
-                                                    class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                                >
-                                                    Edit
-                                                </a>
-
-                                                <button
-                                                    type="button"
-                                                    x-data
-                                                    @click="$dispatch('open-modal', 'delete-todo-{{ $todo->id }}')"
-                                                    class="ml-3 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </td>
                                         </tr>
-
-                                        @include('todos.partials.delete-modal', ['todo' => $todo])
 
                                     @endforeach
                                 </tbody>

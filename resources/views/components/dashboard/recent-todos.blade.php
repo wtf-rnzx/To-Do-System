@@ -19,6 +19,14 @@
                                               : 'bg-amber-400');
             @endphp
 
+            @php
+                $priorityClass = match($todo->priority ?? 'medium') {
+                    'high' => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+                    'low' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                    default => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                };
+            @endphp
+
             <div class="flex items-start gap-3 py-2
                         {{ !$loop->last ? 'border-b border-gray-100 dark:border-gray-700/50' : '' }}">
                 {{-- Status dot --}}
@@ -46,6 +54,16 @@
                         @else
                             <span class="text-[11px] text-gray-400 dark:text-gray-500">
                                 {{ $todo->created_at->diffForHumans() }}
+                            </span>
+                        @endif
+
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold {{ $priorityClass }}">
+                            {{ strtoupper(substr($todo->priority ?? 'medium', 0, 1)) }}
+                        </span>
+
+                        @if(($todo->subtasks_count ?? 0) > 0)
+                            <span class="text-[11px] text-gray-400 dark:text-gray-500">
+                                {{ $todo->completed_subtasks_count ?? 0 }}/{{ $todo->subtasks_count }}
                             </span>
                         @endif
                     </div>
