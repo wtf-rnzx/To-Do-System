@@ -18,6 +18,9 @@
                     <x-nav-link :href="route('todos.index')" :active="request()->routeIs('todos.*')">
                         {{ __('Todos') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('achievements.index')" :active="request()->routeIs('achievements.*')">
+                        {{ __('Achievements') }}
+                    </x-nav-link>
                     @auth
                         @if(auth()->user()->usertype === 'admin')
                             <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
@@ -122,6 +125,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('todos.index')" :active="request()->routeIs('todos.*')">
                 {{ __('Todos') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('achievements.index')" :active="request()->routeIs('achievements.*')">
+                {{ __('Achievements') }}
             </x-responsive-nav-link>
             @auth
                 @if(auth()->user()->usertype === 'admin')

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TodoController;
@@ -33,6 +34,9 @@ Route::patch('/home/weekly-goal', [HomeController::class, 'updateWeeklyGoal'])->
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/achievements', [AchievementController::class, 'index'])->name('achievements.index');
+    Route::patch('/achievements/{achievement}/visibility', [AchievementController::class, 'toggleVisibility'])->name('achievements.toggle-visibility');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

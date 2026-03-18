@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\UserAchievement;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,8 +19,19 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+
+        $visibleAchievements = UserAchievement::query()
+            ->where('user_id', $user->id)
+            ->whereNotNull('unlocked_at')
+            ->where('is_visible', true)
+            ->with('achievement')
+            ->orderByDesc('unlocked_at')
+            ->get();
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'visibleAchievements' => $visibleAchievements,
         ]);
     }
 

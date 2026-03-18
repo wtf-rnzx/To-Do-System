@@ -4,12 +4,15 @@ namespace App\Providers;
 
 use App\Listeners\LogUserLogin;
 use App\Listeners\LogUserLogout;
+use App\Listeners\EvaluateUserAchievements;
+use App\Listeners\FlashUnlockedAchievement;
+use App\Events\TaskCompleted;
+use App\Events\AchievementUnlocked;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Event;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -27,6 +30,12 @@ class EventServiceProvider extends ServiceProvider
         ],
         Logout::class => [
             LogUserLogout::class,
+        ],
+        TaskCompleted::class => [
+            EvaluateUserAchievements::class,
+        ],
+        AchievementUnlocked::class => [
+            FlashUnlockedAchievement::class,
         ],
     ];
 
