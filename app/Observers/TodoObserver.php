@@ -4,9 +4,14 @@ namespace App\Observers;
 
 use App\Models\Todo;
 use App\Services\ActivityLogger;
+use App\Services\RecurringTodoService;
 
 class TodoObserver
 {
+    public function __construct(
+        private readonly RecurringTodoService $recurringTodoService,
+    ) {}
+
     public function created(Todo $todo): void
     {
         ActivityLogger::log(
@@ -27,9 +32,10 @@ class TodoObserver
             return;
         }
 
+        $changeKeys = array_values(array_diff(array_keys($changes), ['completed_at']));
+
         // Separate "toggle" (status-only change) from a real update
-        $isToggle = array_keys($changes) === ['completed'] ||
-                    array_keys($changes) === ['completed', 'updated_at'];
+        $isToggle = $changeKeys === ['completed'];
 
         ActivityLogger::log(
             user:        auth()->user(),
@@ -40,6 +46,10 @@ class TodoObserver
                 : "Updated todo: '{$todo->title}'.",
             properties:  ['todo_id' => $todo->id, 'changes' => $changes],
         );
+
+        if ($todo->wasChanged('completed') && $todo->completed && $todo->recurrence_type) {
+            $this->recurringTodoService->generateNextInstance($todo);
+        }
     }
 
     public function deleted(Todo $todo): void

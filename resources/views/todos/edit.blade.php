@@ -61,6 +61,46 @@
                             @enderror
                         </div>
 
+                        <!-- Priority Input -->
+                        <div class="mb-4">
+                            <label for="priority" class="block text-sm font-medium mb-2">
+                                Priority
+                            </label>
+                            <select
+                                name="priority"
+                                id="priority"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                required
+                            >
+                                <option value="low" {{ old('priority', $todo->priority) === 'low' ? 'selected' : '' }}>Low</option>
+                                <option value="medium" {{ old('priority', $todo->priority ?? 'medium') === 'medium' ? 'selected' : '' }}>Medium</option>
+                                <option value="high" {{ old('priority', $todo->priority) === 'high' ? 'selected' : '' }}>High</option>
+                            </select>
+                            @error('priority')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Recurrence Input -->
+                        <div class="mb-4">
+                            <label for="recurrence_type" class="block text-sm font-medium mb-2">
+                                Recurrence
+                            </label>
+                            <select
+                                name="recurrence_type"
+                                id="recurrence_type"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            >
+                                <option value="">Does not repeat</option>
+                                <option value="daily" {{ old('recurrence_type', $todo->recurrence_type) === 'daily' ? 'selected' : '' }}>Daily</option>
+                                <option value="weekly" {{ old('recurrence_type', $todo->recurrence_type) === 'weekly' ? 'selected' : '' }}>Weekly</option>
+                                <option value="monthly" {{ old('recurrence_type', $todo->recurrence_type) === 'monthly' ? 'selected' : '' }}>Monthly</option>
+                            </select>
+                            @error('recurrence_type')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
                         <!-- Description Input -->
                         <div class="mb-4">
                             <label for="description" class="block text-sm font-medium mb-2">

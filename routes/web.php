@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TodoController;
+use App\Http\Controllers\TodoSubtaskController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +25,7 @@ Route::get('/', function () {
 
 
 Route::get('/home', [HomeController::class, 'index'])->middleware('auth')->name('home');
+Route::patch('/home/weekly-goal', [HomeController::class, 'updateWeeklyGoal'])->middleware('auth')->name('home.weekly-goal');
 
 
 // Route::get('/dashboard', function () {
@@ -38,7 +40,12 @@ Route::middleware('auth')->group(function () {
     // Todo routes
     Route::resource('todos', TodoController::class);
     Route::patch('todos/{todo}/toggle', [TodoController::class, 'toggle'])->name('todos.toggle');
-    Route::get('/todos/{todo}', [TodoController::class, 'show'])->name('todos.show');
+    Route::patch('todos/{todo}/snooze', [TodoController::class, 'snooze'])->name('todos.snooze');
+
+    Route::post('todos/{todo}/subtasks', [TodoSubtaskController::class, 'store'])->name('todos.subtasks.store');
+    Route::patch('todos/{todo}/subtasks/{subtask}', [TodoSubtaskController::class, 'update'])->name('todos.subtasks.update');
+    Route::patch('todos/{todo}/subtasks/{subtask}/toggle', [TodoSubtaskController::class, 'toggle'])->name('todos.subtasks.toggle');
+    Route::delete('todos/{todo}/subtasks/{subtask}', [TodoSubtaskController::class, 'destroy'])->name('todos.subtasks.destroy');
 });
 
 Route::middleware(['auth', 'admin'])
