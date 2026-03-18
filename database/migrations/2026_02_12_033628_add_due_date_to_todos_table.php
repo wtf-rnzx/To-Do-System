@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('todos', function (Blueprint $table) {
-            //
-            $table->date('due_date')->nullable()->after('completed');
-        });
+        if (! Schema::hasColumn('todos', 'due_date')) {
+            Schema::table('todos', function (Blueprint $table) {
+                $table->date('due_date')->nullable()->after('completed');
+            });
+        }
     }
 
     /**
@@ -22,10 +23,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('todos', function (Blueprint $table) {
-            // ...existing code...
-            $table->dropColumn('due_date');
-        });
+        if (Schema::hasColumn('todos', 'due_date')) {
+            Schema::table('todos', function (Blueprint $table) {
+                $table->dropColumn('due_date');
+            });
+        }
 
     }
 };

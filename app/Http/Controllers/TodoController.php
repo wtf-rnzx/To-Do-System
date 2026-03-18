@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Todo;
+use App\Models\TodoSnoozeHistory;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rule;
@@ -19,9 +20,19 @@ class TodoController extends Controller
 
         try{
             $status = $request->query('status', 'all'); // all|completed|ongoing
+            $smartView = $request->query('smart_view', 'all'); // all|today|upcoming|overdue
+            $priority = $request->query('priority', 'all'); // all|low|medium|high
 
             if (!in_array($status, ['all', 'completed', 'ongoing'], true)) {
                 $status = 'all';
+            }
+
+            if (! in_array($smartView, ['all', 'today', 'upcoming', 'overdue'], true)) {
+                $smartView = 'all';
+            }
+
+            if (! in_array($priority, ['all', 'low', 'medium', 'high'], true)) {
+                $priority = 'all';
             }
 
             $from = $request->query('from');
@@ -29,12 +40,30 @@ class TodoController extends Controller
 
             $query = Todo::query()
                 ->where('user_id', auth()->id())
+                ->withCount([
+                    'subtasks',
+                    'subtasks as completed_subtasks_count' => fn ($q) => $q->where('completed', true),
+                ])
                 ->latest();
 
             if ($status === 'completed') {
                 $query->where('completed', true);
             } elseif ($status === 'ongoing') {
                 $query->where('completed', false);
+            }
+
+            if ($priority !== 'all') {
+                $query->where('priority', $priority);
+            }
+
+            if ($smartView === 'today') {
+                $query->whereDate('due_date', today());
+            } elseif ($smartView === 'upcoming') {
+                $query->whereDate('due_date', '>', today())
+                    ->where('completed', false);
+            } elseif ($smartView === 'overdue') {
+                $query->whereDate('due_date', '<', today())
+                    ->where('completed', false);
             }
 
             // Apply date range filter
@@ -45,9 +74,9 @@ class TodoController extends Controller
                 $query->where('created_at', '<=', \Carbon\Carbon::parse($to));
             }
 
-            $todos = $query->paginate(6)->appends(request()->query());
+            $todos = $query->paginate(10)->appends(request()->query());
 
-            return view('todos.index', compact('todos', 'status', 'from', 'to'));
+            return view('todos.index', compact('todos', 'status', 'from', 'to', 'smartView', 'priority'));
             }
         catch(Exception $e){
             Log::error('Error fetching todos: ' . $e->getMessage());
@@ -65,13 +94,20 @@ class TodoController extends Controller
     // Store new todo
     public function store(Request $request)
     {
-        Log::info('Creating new todo with title: ' . $request);
+        Log::info('Creating todo', ['user_id' => auth()->id()]);
 
         try {
             $validated = $request->validate([
-                'title' => ['required', 'string', 'max:255', 'unique:todos,title'],
+                'title' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    Rule::unique('todos', 'title')->where(fn ($q) => $q->where('user_id', auth()->id())),
+                ],
                 'description' => ['nullable', 'string', 'max:2000'],
                 'due_date' => ['nullable', 'date'],
+                'priority' => ['required', Rule::in(['low', 'medium', 'high'])],
+                'recurrence_type' => ['nullable', Rule::in(['daily', 'weekly', 'monthly'])],
             ], [
                 'title.unique' => 'A task with this title already exists.',
             ]);
@@ -80,6 +116,8 @@ class TodoController extends Controller
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
                 'due_date' => $validated['due_date'] ?? null,
+                'priority' => $validated['priority'] ?? 'medium',
+                'recurrence_type' => $validated['recurrence_type'] ?? null,
                 'user_id' => auth()->id(),
             ]);
     
@@ -116,11 +154,15 @@ class TodoController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('todos', 'title')->ignore($todo->id),
+                Rule::unique('todos', 'title')
+                    ->ignore($todo->id)
+                    ->where(fn ($q) => $q->where('user_id', auth()->id())),
             ],
                 'description' => ['nullable', 'string', 'max:2000'],
                 'due_date' => ['nullable', 'date'],
                 'completed' => ['nullable'],
+                'priority' => ['required', Rule::in(['low', 'medium', 'high'])],
+                'recurrence_type' => ['nullable', Rule::in(['daily', 'weekly', 'monthly'])],
             ], [
                 'title.unique' => 'A task with this title already exists.',
             ]);
@@ -130,7 +172,22 @@ class TodoController extends Controller
                 'description' => $validated['description'] ?? null,
                 'due_date' => $validated['due_date'] ?? null,
                 'completed' => $request->boolean('completed'),
+                'priority' => $validated['priority'],
+                'recurrence_type' => $validated['recurrence_type'] ?? null,
             ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Todo updated successfully!',
+                    'todo' => [
+                        'title' => $todo->title,
+                        'description' => $todo->description,
+                        'priority' => $todo->priority,
+                        'recurrence_type' => $todo->recurrence_type,
+                        'due_date' => optional($todo->due_date)->format('Y-m-d'),
+                    ],
+                ]);
+            }
 
             return redirect()->route('todos.index')->with('success', 'Todo updated successfully!');
         }
@@ -162,6 +219,8 @@ class TodoController extends Controller
 
         Log::info('Showing details for todo with ID: ' . $todo->id);
         try{
+            $todo->load(['subtasks', 'snoozeHistory.user']);
+
             return view('todos.show', compact('todo'));
         } catch (Exception $e) {
             Log::error('Error showing todo: ' . $e->getMessage());
@@ -186,5 +245,38 @@ class TodoController extends Controller
             Log::error('Error toggling todo status: ' . $e->getMessage());
             return redirect()->back()->with('error', 'An error occurred while toggling the todo status.');
         }
+    }
+
+    public function snooze(Request $request, Todo $todo)
+    {
+        abort_unless($todo->user_id === auth()->id(), 403);
+
+        $validated = $request->validate([
+            'days' => ['nullable', 'integer', 'min:1', 'max:30'],
+            'due_date' => ['nullable', 'date'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $oldDueDate = $todo->due_date;
+
+        $newDueDate = isset($validated['due_date'])
+            ? \Carbon\Carbon::parse($validated['due_date'])->toDateString()
+            : ($oldDueDate?->copy()->addDays((int) ($validated['days'] ?? 1))->toDateString()
+                ?? today()->addDays((int) ($validated['days'] ?? 1))->toDateString());
+
+        $todo->update([
+            'due_date' => $newDueDate,
+        ]);
+
+        TodoSnoozeHistory::create([
+            'todo_id' => $todo->id,
+            'user_id' => auth()->id(),
+            'old_due_date' => $oldDueDate?->toDateString(),
+            'new_due_date' => $newDueDate,
+            'reason' => $validated['reason'] ?? null,
+            'snoozed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Task snoozed successfully.');
     }
 }

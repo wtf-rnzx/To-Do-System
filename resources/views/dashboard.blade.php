@@ -6,7 +6,7 @@
                     Dashboard
                 </h2>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                    Welcome back, {{ Auth::user()->name }}
+                    Welcome back, {{ auth()->user()->name }}
                 </p>
             </div>
             <a href="{{ route('todos.create') }}"
@@ -22,74 +22,163 @@
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+
+                @if (session('success'))
+                    <div class="col-span-2 md:col-span-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+                        {{ session('success') }}
+                    </div>
+                @endif
 
                 {{-- ── Row 1: Stat Cards ───────────────────────────────────── --}}
 
+                <div class="col-span-2 md:col-span-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+                    <div class="flex items-start justify-between gap-3 mb-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Task Overview</p>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Core Metrics</h3>
+                        </div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ $completionPct }}% completed</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div class="rounded-lg border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/70 dark:bg-indigo-900/20 p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Total Tasks</p>
+                            <p class="mt-1 text-2xl font-bold text-indigo-900 dark:text-indigo-100 tabular-nums">{{ $totalTodos }}</p>
+                        </div>
+
+                        <div class="rounded-lg border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/70 dark:bg-emerald-900/20 p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Completed</p>
+                            <p class="mt-1 text-2xl font-bold text-emerald-900 dark:text-emerald-100 tabular-nums">{{ $completedTodos }}</p>
+                        </div>
+
+                        <div class="rounded-lg border border-amber-100 dark:border-amber-900/30 bg-amber-50/70 dark:bg-amber-900/20 p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">Pending</p>
+                            <p class="mt-1 text-2xl font-bold text-amber-900 dark:text-amber-100 tabular-nums">{{ $pendingTodos }}</p>
+                        </div>
+
+                        <div class="rounded-lg border border-red-100 dark:border-red-900/30 bg-red-50/70 dark:bg-red-900/20 p-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-red-700 dark:text-red-300">Overdue</p>
+                            <p class="mt-1 text-2xl font-bold text-red-900 dark:text-red-100 tabular-nums">{{ $overdueTodos }}</p>
+                            <p class="text-[11px] mt-1 text-red-700/80 dark:text-red-300/80">{{ $overdueTodos > 0 ? 'Needs attention' : 'All clear' }}</p>
+                        </div>
+                    </div>
+                </div>
+
                 <x-dashboard.stat-card
-                    label="Total Tasks"
-                    :value="$totalTodos"
-                    icon-bg="bg-indigo-50 dark:bg-indigo-900/20">
+                    label="Current Streak"
+                    :value="$dailyStreak"
+                    icon-bg="bg-orange-50 dark:bg-orange-900/20"
+                    :sublabel="$dailyStreak . ' day(s) in a row'">
                     <x-slot:icon>
-                        <svg class="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none"
+                        <svg class="h-5 w-5 text-orange-600 dark:text-orange-400" fill="none"
                              stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                  d="M15.362 5.214A8.252 8.252 0 0112 5.25c-2.29 0-4.34.932-5.82 2.436m0 0A8.25 8.25 0 104.5 12c0-1.03.19-2.015.537-2.923m0 0A8.223 8.223 0 016.18 7.686m0 0L3.75 6m2.43 1.686L6.75 3.75" />
                         </svg>
                     </x-slot:icon>
                 </x-dashboard.stat-card>
 
-                <x-dashboard.stat-card
-                    label="Completed"
-                    :value="$completedTodos"
-                    icon-bg="bg-emerald-50 dark:bg-emerald-900/20"
-                    :sublabel="$completionPct . '% of total'">
-                    <x-slot:icon>
-                        <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none"
-                             stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </x-slot:icon>
-                </x-dashboard.stat-card>
+                <div
+                    class="col-span-2 md:col-span-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4"
+                    x-data="{
+                        editMode: false,
+                        loading: false,
+                        error: '',
+                        weeklyGoal: {{ (int) $weeklyGoal }},
+                        currentGoal: {{ (int) $weeklyGoal }},
+                        async saveGoal() {
+                            this.error = '';
+                            this.loading = true;
+                            try {
+                                const response = await fetch('{{ route('home.weekly-goal') }}', {
+                                    method: 'PATCH',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json',
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').getAttribute('content'),
+                                    },
+                                    body: JSON.stringify({ weekly_goal: this.weeklyGoal }),
+                                });
 
-                <x-dashboard.stat-card
-                    label="Pending"
-                    :value="$pendingTodos"
-                    icon-bg="bg-amber-50 dark:bg-amber-900/20">
-                    <x-slot:icon>
-                        <svg class="h-5 w-5 text-amber-600 dark:text-amber-400" fill="none"
-                             stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </x-slot:icon>
-                </x-dashboard.stat-card>
+                                const payload = await response.json();
+                                if (!response.ok) {
+                                    this.error = payload.message ?? 'Unable to update weekly goal.';
+                                    return;
+                                }
 
-                <x-dashboard.stat-card
-                    label="Overdue"
-                    :value="$overdueTodos"
-                    icon-bg="bg-red-50 dark:bg-red-900/20"
-                    :sublabel="$overdueTodos > 0 ? 'Needs attention' : 'All clear'">
-                    <x-slot:icon>
-                        <svg class="h-5 w-5 text-red-600 dark:text-red-400" fill="none"
-                             stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118zm-9 3.75h.008v.008H12v-.008z" />
-                        </svg>
-                    </x-slot:icon>
-                </x-dashboard.stat-card>
+                                this.currentGoal = payload.weekly_goal;
+                                this.weeklyGoal = payload.weekly_goal;
+                                this.editMode = false;
+                                window.location.reload();
+                            } catch (e) {
+                                this.error = 'Something went wrong while updating the goal.';
+                            } finally {
+                                this.loading = false;
+                            }
+                        }
+                    }"
+                >
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Weekly Goal</p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white tabular-nums leading-none mt-1">{{ $weeklyCompleted }}/<span x-text="currentGoal"></span></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $weeklyGoalPct }}% complete</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            @click="editMode = !editMode; error = ''; weeklyGoal = currentGoal"
+                            class="h-8 w-8 rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-300 flex items-center justify-center hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors"
+                            aria-label="Edit weekly goal"
+                        >
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 3.487a2.1 2.1 0 112.97 2.97L7.5 18.79l-4.5 1.5 1.5-4.5L16.862 3.487z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div x-show="editMode" x-transition class="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3 space-y-2">
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-300" for="weekly_goal">Set weekly target</label>
+                        <input
+                            id="weekly_goal"
+                            type="number"
+                            min="1"
+                            max="999"
+                            x-model.number="weeklyGoal"
+                            class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                        >
+                        <p x-show="error" x-text="error" class="text-xs text-red-600 dark:text-red-400"></p>
+                        <div class="flex gap-2">
+                            <button
+                                type="button"
+                                @click="saveGoal"
+                                :disabled="loading"
+                                class="inline-flex items-center rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+                            >
+                                <span x-text="loading ? 'Saving...' : 'Save'">Save</span>
+                            </button>
+                            <button
+                                type="button"
+                                @click="editMode = false; error = ''; weeklyGoal = currentGoal"
+                                class="inline-flex items-center rounded-md bg-gray-200 dark:bg-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 {{-- ── Row 2: Trend Chart + Completion Ring ─────────────────── --}}
 
-                <div class="col-span-2 md:col-span-3 h-52">
+                <div class="col-span-2 md:col-span-4 h-52">
                     <x-dashboard.trend-chart
                         :data="$trendData"
                         title="Task Activity — Last 7 Days"
                         color="blue" />
                 </div>
 
-                <div class="col-span-2 md:col-span-1 h-52">
+                <div class="col-span-2 md:col-span-2 h-52">
                     <x-dashboard.completion-ring
                         :percentage="$completionPct"
                         label="My Progress"
@@ -99,14 +188,14 @@
 
                 {{-- ── Row 3: Recent Todos + Quick Actions ──────────────────── --}}
 
-                <div class="col-span-2 md:col-span-3 h-56">
+                <div class="col-span-2 md:col-span-4 h-56">
                     <x-dashboard.recent-todos
                         :todos="$recentTodos"
                         title="Recent Tasks" />
                 </div>
 
                 {{-- Quick Actions --}}
-                <div class="col-span-2 md:col-span-1 h-56">
+                <div class="col-span-2 md:col-span-2 h-56">
                     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700
                                 shadow-sm p-4 flex flex-col h-full gap-2">
                         <span class="text-xs font-semibold uppercase tracking-widest

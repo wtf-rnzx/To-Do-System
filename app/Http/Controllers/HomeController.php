@@ -6,11 +6,37 @@ use App\Models\ActivityLog;
 use App\Models\Todo;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
+    public function updateWeeklyGoal(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        abort_unless($user && $user->usertype === 'user', 403);
+
+        $validated = $request->validate([
+            'weekly_goal' => ['required', 'integer', 'min:1', 'max:999'],
+        ]);
+
+        $user->update([
+            'weekly_goal' => $validated['weekly_goal'],
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Weekly goal updated.',
+                'weekly_goal' => $user->weekly_goal,
+            ]);
+        }
+
+        return redirect()->route('home')->with('success', 'Weekly goal updated.');
+    }
+
     public function index()
     {
         if (Auth::check()) {
@@ -34,6 +60,7 @@ class HomeController extends Controller
 
     private function getUserDashboardData(): array
     {
+        /** @var User $user */
         $user = Auth::user();
 
         $totalTodos     = $user->todos()->count();
@@ -54,6 +81,10 @@ class HomeController extends Controller
         );
 
         $recentTodos = $user->todos()
+                            ->withCount([
+                                'subtasks',
+                                'subtasks as completed_subtasks_count' => fn ($q) => $q->where('completed', true),
+                            ])
                             ->latest()
                             ->limit(6)
                             ->get();
@@ -63,9 +94,44 @@ class HomeController extends Controller
                                      ->limit(6)
                                      ->get();
 
+        $completedToday = $user->todos()
+                               ->whereDate('completed_at', today())
+                               ->count();
+
+        $weeklyGoal = max(1, (int) ($user->weekly_goal ?? 10));
+        $weeklyCompleted = $user->todos()
+                                ->whereBetween('completed_at', [
+                                    today()->copy()->startOfWeek(),
+                                    today()->copy()->endOfWeek(),
+                                ])
+                                ->count();
+
+        $weeklyGoalPct = $weeklyGoal > 0
+            ? min(100, (int) round(($weeklyCompleted / $weeklyGoal) * 100))
+            : 0;
+
+        $dailyCompletions = $user->todos()
+                                 ->selectRaw('DATE(completed_at) as day, COUNT(*) as total')
+                                 ->whereNotNull('completed_at')
+                                 ->where('completed_at', '>=', today()->copy()->subDays(60)->startOfDay())
+                                 ->groupByRaw('DATE(completed_at)')
+                                 ->pluck('total', 'day');
+
+        $dailyStreak = 0;
+        for ($i = 0; $i < 60; $i++) {
+            $day = today()->copy()->subDays($i)->toDateString();
+            if ((int) ($dailyCompletions[$day] ?? 0) > 0) {
+                $dailyStreak++;
+                continue;
+            }
+
+            break;
+        }
+
         return compact(
             'totalTodos', 'completedTodos', 'pendingTodos', 'overdueTodos',
-            'completionPct', 'trendData', 'recentTodos', 'recentActivity'
+            'completionPct', 'trendData', 'recentTodos', 'recentActivity',
+            'completedToday', 'dailyStreak', 'weeklyGoal', 'weeklyCompleted', 'weeklyGoalPct'
         );
     }
 
