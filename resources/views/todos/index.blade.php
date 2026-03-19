@@ -1,12 +1,143 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center"
+             x-data="{ openFilters: false }"
+             @keydown.escape.window="openFilters = false">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 {{ __('My Todos') }}
             </h2>
-            <a href="{{ route('todos.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Add New Todo
-            </a>
+
+            <div class="relative flex items-center gap-2">
+                <button
+                    type="button"
+                    class="relative inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-2.5 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    @click="openFilters = !openFilters"
+                    :aria-expanded="openFilters.toString()"
+                    aria-controls="todos-filter-panel"
+                    aria-label="Open filters"
+                >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6.75 12h10.5M10.5 19.5h3" />
+                    </svg>
+
+                    @if ($hasActiveFilters ?? false)
+                        <span class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-indigo-500 ring-2 ring-white dark:ring-gray-800" aria-hidden="true"></span>
+                    @endif
+                </button>
+
+                <a href="{{ route('todos.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Add New Todo
+                </a>
+
+                <div
+                    id="todos-filter-panel"
+                    x-cloak
+                    x-show="openFilters"
+                    x-transition.origin.top.right
+                    @click.outside="openFilters = false"
+                    class="absolute right-0 top-12 z-40 w-[22rem] max-w-[90vw] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+                    role="dialog"
+                    aria-label="Todos filters"
+                >
+                    <form method="GET" action="{{ route('todos.index') }}" class="p-4 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">Filters</h3>
+                            <a href="{{ route('todos.index') }}"
+                               class="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                Clear
+                            </a>
+                        </div>
+
+                        <fieldset>
+                            <legend class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Smart View</legend>
+                            <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                                @php $selectedSmartViews = $smartViews ?? ['all']; @endphp
+                                @foreach (['all' => 'All', 'today' => 'Today', 'upcoming' => 'Upcoming', 'completed' => 'Completed'] as $value => $label)
+                                    <label class="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/60 cursor-pointer">
+                                        <input type="checkbox"
+                                               name="smart_views[]"
+                                               value="{{ $value }}"
+                                               class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                                               {{ in_array($value, $selectedSmartViews, true) ? 'checked' : '' }}>
+                                        <span class="text-gray-700 dark:text-gray-200">{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</legend>
+                            <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                                @php $selectedStatuses = $statuses ?? ['all']; @endphp
+                                @foreach (['all' => 'All', 'pending' => 'Pending', 'in_progress' => 'In Progress', 'completed' => 'Completed'] as $value => $label)
+                                    <label class="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/60 cursor-pointer">
+                                        <input type="checkbox"
+                                               name="statuses[]"
+                                               value="{{ $value }}"
+                                               class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                                               {{ in_array($value, $selectedStatuses, true) ? 'checked' : '' }}>
+                                        <span class="text-gray-700 dark:text-gray-200">{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Priority</legend>
+                            <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                                @php $selectedPriorities = $priorities ?? ['all']; @endphp
+                                @foreach (['all' => 'All', 'low' => 'Low', 'medium' => 'Medium', 'high' => 'High'] as $value => $label)
+                                    <label class="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/60 cursor-pointer">
+                                        <input type="checkbox"
+                                               name="priorities[]"
+                                               value="{{ $value }}"
+                                               class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                                               {{ in_array($value, $selectedPriorities, true) ? 'checked' : '' }}>
+                                        <span class="text-gray-700 dark:text-gray-200">{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Date Range</legend>
+                            <div class="mt-2 grid grid-cols-2 gap-2">
+                                <div>
+                                    <label for="filter-from" class="sr-only">From</label>
+                                    <input
+                                        type="datetime-local"
+                                        id="filter-from"
+                                        name="from"
+                                        value="{{ $from ?? '' }}"
+                                        class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="filter-to" class="sr-only">To</label>
+                                    <input
+                                        type="datetime-local"
+                                        id="filter-to"
+                                        name="to"
+                                        value="{{ $to ?? '' }}"
+                                        class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                                    />
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                            <a href="{{ route('todos.index') }}"
+                               class="inline-flex items-center rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-sm font-medium py-2 px-3">
+                                Clear
+                            </a>
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-3">
+                                Apply
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </x-slot>
 
@@ -18,90 +149,6 @@
                     {{ session('success') }}
                 </div>
             @endif
-
-            <div class="mb-4">
-                <form method="GET" action="{{ route('todos.index') }}" class="flex flex-wrap items-end gap-3 justify-between">
-                    {{-- Smart View --}}
-                    <div class="flex flex-col gap-1">
-                        <label for="smart_view" class="text-xs font-medium text-gray-600 dark:text-gray-300">Smart View</label>
-                        <select
-                            id="smart_view"
-                            name="smart_view"
-                            class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
-                        >
-                            <option value="all" {{ ($smartView ?? 'all') === 'all' ? 'selected' : '' }}>All</option>
-                            <option value="today" {{ ($smartView ?? 'all') === 'today' ? 'selected' : '' }}>Today</option>
-                            <option value="upcoming" {{ ($smartView ?? 'all') === 'upcoming' ? 'selected' : '' }}>Upcoming</option>
-                            <option value="overdue" {{ ($smartView ?? 'all') === 'overdue' ? 'selected' : '' }}>Overdue</option>
-                        </select>
-                    </div>
-
-                    {{-- Status Filter --}}
-                    <div class="flex flex-col gap-1">
-                        <label for="status" class="text-xs font-medium text-gray-600 dark:text-gray-300">Status</label>
-                        <select
-                            id="status"
-                            name="status"
-                            class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
-                        >
-                            <option value="all"       {{ ($status ?? 'all') === 'all'       ? 'selected' : '' }}>All</option>
-                            <option value="ongoing"   {{ ($status ?? 'all') === 'ongoing'   ? 'selected' : '' }}>Ongoing</option>
-                            <option value="completed" {{ ($status ?? 'all') === 'completed' ? 'selected' : '' }}>Completed</option>
-                        </select>
-                    </div>
-
-                    {{-- Priority Filter --}}
-                    <div class="flex flex-col gap-1">
-                        <label for="priority" class="text-xs font-medium text-gray-600 dark:text-gray-300">Priority</label>
-                        <select
-                            id="priority"
-                            name="priority"
-                            class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
-                        >
-                            <option value="all" {{ ($priority ?? 'all') === 'all' ? 'selected' : '' }}>All</option>
-                            <option value="high" {{ ($priority ?? 'all') === 'high' ? 'selected' : '' }}>High</option>
-                            <option value="medium" {{ ($priority ?? 'all') === 'medium' ? 'selected' : '' }}>Medium</option>
-                            <option value="low" {{ ($priority ?? 'all') === 'low' ? 'selected' : '' }}>Low</option>
-                        </select>
-                    </div>
-
-                    <div class="flex flex-wrap items-end gap-3">
-                        {{-- From --}}
-                        <div class="flex flex-col gap-1">
-                            <label for="from" class="text-xs font-medium text-gray-600 dark:text-gray-300">From</label>
-                            <input
-                                type="datetime-local"
-                                id="from"
-                                name="from"
-                                value="{{ $from ?? '' }}"
-                                class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
-                            />
-                        </div>
-
-                        {{-- To --}}
-                        <div class="flex flex-col gap-1">
-                            <label for="to" class="text-xs font-medium text-gray-600 dark:text-gray-300">To</label>
-                            <input
-                                type="datetime-local"
-                                id="to"
-                                name="to"
-                                value="{{ $to ?? '' }}"
-                                class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
-                            />
-                        </div>
-
-                        {{-- Apply & Clear buttons --}}
-                        <div class="flex gap-2">
-                            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-md">
-                                Apply
-                            </button>
-                            <a href="{{ route('todos.index') }}" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-sm font-medium py-2 px-4 rounded-md">
-                                Clear
-                            </a>
-                        </div>
-                    </div>
-                </form>
-            </div>
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
@@ -235,3 +282,9 @@ document.addEventListener('keydown', function (e) {
     }
 });
 </script>
+
+<style>
+[x-cloak] {
+    display: none !important;
+}
+</style>

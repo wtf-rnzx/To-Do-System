@@ -16,24 +16,74 @@ class TodoController extends Controller
     // Display all todos
     public function index(Request $request)
     {
-        Log::info('Fetching todos with status filter: ' . $request->query('status', 'all'));
+        Log::info('Fetching todos with advanced filters', [
+            'smart_views' => $request->query('smart_views', []),
+            'statuses' => $request->query('statuses', []),
+            'priorities' => $request->query('priorities', []),
+            'from' => $request->query('from'),
+            'to' => $request->query('to'),
+        ]);
 
         try{
-            $status = $request->query('status', 'all'); // all|completed|ongoing
-            $smartView = $request->query('smart_view', 'all'); // all|today|upcoming|overdue
-            $priority = $request->query('priority', 'all'); // all|low|medium|high
+            $toArray = static fn ($value): array => is_array($value)
+                ? $value
+                : (is_null($value) || $value === '' ? [] : [$value]);
 
-            if (!in_array($status, ['all', 'completed', 'ongoing'], true)) {
-                $status = 'all';
+            $normalize = static function (array $values, array $allowed): array {
+                $normalized = collect($values)
+                    ->filter(fn ($value) => is_string($value) || is_numeric($value))
+                    ->map(fn ($value) => strtolower(trim((string) $value)))
+                    ->filter(fn ($value) => in_array($value, $allowed, true))
+                    ->values()
+                    ->all();
+
+                if (in_array('all', $normalized, true)) {
+                    return ['all'];
+                }
+
+                return array_values(array_unique($normalized));
+            };
+
+            $smartViews = $normalize($toArray($request->query('smart_views', [])), ['all', 'today', 'upcoming', 'overdue', 'completed']);
+            $statuses = $normalize($toArray($request->query('statuses', [])), ['all', 'pending', 'in_progress', 'completed']);
+            $priorities = $normalize($toArray($request->query('priorities', [])), ['all', 'low', 'medium', 'high']);
+
+            // Backward compatibility for existing query links.
+            $legacyFilter = strtolower((string) $request->query('filter', ''));
+            if ($legacyFilter !== '' && $legacyFilter !== 'all') {
+                [$type, $value] = array_pad(explode(':', $legacyFilter, 2), 2, null);
+
+                if ($type === 'smart' && in_array($value, ['today', 'upcoming', 'overdue', 'completed'], true)) {
+                    $smartViews = [$value];
+                } elseif ($type === 'status' && in_array($value, ['completed', 'ongoing', 'pending', 'in_progress'], true)) {
+                    $statuses = [$value === 'ongoing' ? 'in_progress' : $value];
+                } elseif ($type === 'priority' && in_array($value, ['low', 'medium', 'high'], true)) {
+                    $priorities = [$value];
+                }
             }
 
-            if (! in_array($smartView, ['all', 'today', 'upcoming', 'overdue'], true)) {
-                $smartView = 'all';
+            $legacySmartView = strtolower((string) $request->query('smart_view', ''));
+            if ($smartViews === [] && in_array($legacySmartView, ['today', 'upcoming', 'overdue', 'completed'], true)) {
+                $smartViews = [$legacySmartView];
             }
 
-            if (! in_array($priority, ['all', 'low', 'medium', 'high'], true)) {
-                $priority = 'all';
+            $legacyStatus = strtolower((string) $request->query('status', ''));
+            if ($statuses === [] && in_array($legacyStatus, ['completed', 'ongoing'], true)) {
+                $statuses = [$legacyStatus === 'ongoing' ? 'in_progress' : 'completed'];
             }
+
+            $legacyPriority = strtolower((string) $request->query('priority', ''));
+            if ($priorities === [] && in_array($legacyPriority, ['low', 'medium', 'high'], true)) {
+                $priorities = [$legacyPriority];
+            }
+
+            $smartViews = $smartViews === [] ? ['all'] : $smartViews;
+            $statuses = $statuses === [] ? ['all'] : $statuses;
+            $priorities = $priorities === [] ? ['all'] : $priorities;
+
+            $hasSmartViewFilters = ! in_array('all', $smartViews, true);
+            $hasStatusFilters = ! in_array('all', $statuses, true);
+            $hasPriorityFilters = ! in_array('all', $priorities, true);
 
             $from = $request->query('from');
             $to   = $request->query('to');
@@ -46,24 +96,73 @@ class TodoController extends Controller
                 ])
                 ->latest();
 
-            if ($status === 'completed') {
-                $query->where('completed', true);
-            } elseif ($status === 'ongoing') {
-                $query->where('completed', false);
+            if ($hasStatusFilters) {
+                $query->where(function ($statusQuery) use ($statuses) {
+                    foreach ($statuses as $index => $status) {
+                        $method = $index === 0 ? 'where' : 'orWhere';
+
+                        if ($status === 'completed') {
+                            $statusQuery->{$method}('completed', true);
+                            continue;
+                        }
+
+                        if ($status === 'in_progress') {
+                            $statusQuery->{$method}('completed', false);
+                            continue;
+                        }
+
+                        if ($status === 'pending') {
+                            $statusQuery->{$method}(function ($pendingQuery) {
+                                $pendingQuery->where('completed', false)
+                                    ->where(function ($dueQuery) {
+                                        $dueQuery->whereNull('due_date')
+                                            ->orWhereDate('due_date', '>=', today());
+                                    });
+                            });
+                        }
+                    }
+                });
             }
 
-            if ($priority !== 'all') {
-                $query->where('priority', $priority);
+            if ($hasPriorityFilters) {
+                $query->whereIn('priority', $priorities);
             }
 
-            if ($smartView === 'today') {
-                $query->whereDate('due_date', today());
-            } elseif ($smartView === 'upcoming') {
-                $query->whereDate('due_date', '>', today())
-                    ->where('completed', false);
-            } elseif ($smartView === 'overdue') {
-                $query->whereDate('due_date', '<', today())
-                    ->where('completed', false);
+            if ($hasSmartViewFilters) {
+                $query->where(function ($smartViewQuery) use ($smartViews) {
+                    foreach ($smartViews as $index => $smartView) {
+                        $method = $index === 0 ? 'where' : 'orWhere';
+
+                        if ($smartView === 'today') {
+                            $smartViewQuery->{$method}(function ($todayQuery) {
+                                $todayQuery->whereDate('due_date', today());
+                            });
+                            continue;
+                        }
+
+                        if ($smartView === 'upcoming') {
+                            $smartViewQuery->{$method}(function ($upcomingQuery) {
+                                $upcomingQuery->whereDate('due_date', '>', today())
+                                    ->where('completed', false);
+                            });
+                            continue;
+                        }
+
+                        if ($smartView === 'overdue') {
+                            $smartViewQuery->{$method}(function ($overdueQuery) {
+                                $overdueQuery->whereDate('due_date', '<', today())
+                                    ->where('completed', false);
+                            });
+                            continue;
+                        }
+
+                        if ($smartView === 'completed') {
+                            $smartViewQuery->{$method}(function ($completedQuery) {
+                                $completedQuery->where('completed', true);
+                            });
+                        }
+                    }
+                });
             }
 
             // Apply date range filter
@@ -76,7 +175,21 @@ class TodoController extends Controller
 
             $todos = $query->paginate(10)->appends(request()->query());
 
-            return view('todos.index', compact('todos', 'status', 'from', 'to', 'smartView', 'priority'));
+            $hasActiveFilters = $hasSmartViewFilters
+                || $hasStatusFilters
+                || $hasPriorityFilters
+                || ! empty($from)
+                || ! empty($to);
+
+            return view('todos.index', compact(
+                'todos',
+                'from',
+                'to',
+                'smartViews',
+                'statuses',
+                'priorities',
+                'hasActiveFilters'
+            ));
             }
         catch(Exception $e){
             Log::error('Error fetching todos: ' . $e->getMessage());

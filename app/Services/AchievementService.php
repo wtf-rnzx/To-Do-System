@@ -76,6 +76,15 @@ class AchievementService
         for ($i = 0; $i < 60; $i++) {
             $day = $today->copy()->subDays($i)->toDateString();
 
+            $hasDueCommitmentOnDay = $dueTrackedTodos->contains(
+                fn ($todo): bool => $todo->due_date->toDateString() <= $day
+            );
+
+            // Do not count "clean" days before the user had any due-date obligation.
+            if (! $hasDueCommitmentOnDay) {
+                break;
+            }
+
             $hasOverdueOnDay = $dueTrackedTodos->contains(function ($todo) use ($day): bool {
                 if ($todo->due_date->toDateString() >= $day) {
                     return false;

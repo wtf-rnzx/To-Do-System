@@ -79,4 +79,31 @@ class AchievementSystemTest extends TestCase
         $this->assertFalse($userAchievement->fresh()->is_visible);
     }
 
+    public function test_clean_week_and_month_are_not_unlocked_for_new_user_without_due_date_history(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('achievements.index'));
+
+        $response->assertOk();
+
+        $cleanWeek = Achievement::query()->where('slug', 'no_overdue_week')->firstOrFail();
+        $cleanMonth = Achievement::query()->where('slug', 'no_overdue_month')->firstOrFail();
+
+        $cleanWeekRow = UserAchievement::query()
+            ->where('user_id', $user->id)
+            ->where('achievement_id', $cleanWeek->id)
+            ->firstOrFail();
+
+        $cleanMonthRow = UserAchievement::query()
+            ->where('user_id', $user->id)
+            ->where('achievement_id', $cleanMonth->id)
+            ->firstOrFail();
+
+        $this->assertNull($cleanWeekRow->unlocked_at);
+        $this->assertNull($cleanMonthRow->unlocked_at);
+        $this->assertSame(0, (int) $cleanWeekRow->progress);
+        $this->assertSame(0, (int) $cleanMonthRow->progress);
+    }
+
 }

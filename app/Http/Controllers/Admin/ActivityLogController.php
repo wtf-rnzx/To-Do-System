@@ -13,43 +13,69 @@ class ActivityLogController extends Controller
     {
         $query = ActivityLog::latest('created_at');
 
-        // Search across user_name, description, ip_address
-        if ($search = $request->query('search')) {
-            $query->search($search);
+        $selectedUserId = $request->query('user_id');
+        $selectedSort = (string) $request->query('sort', 'newest');
+        $selectedActions = $request->query('actions', []);
+        $selectedModules = $request->query('modules', []);
+        $from = (string) $request->query('from', '');
+        $to = (string) $request->query('to', '');
+
+        $selectedActions = is_array($selectedActions) ? $selectedActions : [$selectedActions];
+        $selectedModules = is_array($selectedModules) ? $selectedModules : [$selectedModules];
+
+        $selectedActions = collect($selectedActions)
+            ->map(fn ($action) => strtolower(trim((string) $action)))
+            ->filter(fn ($action) => in_array($action, ActivityLog::availableActions(), true))
+            ->unique()
+            ->values()
+            ->all();
+
+        $selectedModules = collect($selectedModules)
+            ->map(fn ($module) => strtolower(trim((string) $module)))
+            ->filter(fn ($module) => in_array($module, ActivityLog::availableModules(), true))
+            ->unique()
+            ->values()
+            ->all();
+
+        // Backward compatibility for old single-select params.
+        $legacyAction = strtolower((string) $request->query('action', ''));
+        if ($selectedActions === [] && in_array($legacyAction, ActivityLog::availableActions(), true)) {
+            $selectedActions = [$legacyAction];
+        }
+
+        $legacyModule = strtolower((string) $request->query('module', ''));
+        if ($selectedModules === [] && in_array($legacyModule, ActivityLog::availableModules(), true)) {
+            $selectedModules = [$legacyModule];
         }
 
         // Date range
-        if ($from = $request->query('from')) {
+        if ($from !== '') {
             $query->dateFrom($from);
         }
-        if ($to = $request->query('to')) {
+        if ($to !== '') {
             $query->dateTo($to);
         }
 
         // Filter by specific user
-        if ($userId = $request->query('user_id')) {
-            $query->forUser((int) $userId);
+        if (! empty($selectedUserId)) {
+            $query->forUser((int) $selectedUserId);
         }
 
-        // Filter by action type
-        if ($action = $request->query('action')) {
-            if (in_array($action, ActivityLog::availableActions(), true)) {
-                $query->forAction($action);
-            }
+        if ($selectedActions !== []) {
+            $query->whereIn('action', $selectedActions);
         }
 
-        // Filter by module
-        if ($module = $request->query('module')) {
-            if (in_array($module, ActivityLog::availableModules(), true)) {
-                $query->forModule($module);
-            }
+        if ($selectedModules !== []) {
+            $query->whereIn('module', $selectedModules);
         }
 
         // Sort (default: newest first)
-        $sort = $request->query('sort', 'newest');
-        match ($sort) {
+        if (! in_array($selectedSort, ['newest', 'oldest'], true)) {
+            $selectedSort = 'newest';
+        }
+
+        match ($selectedSort) {
             'oldest' => $query->oldest('created_at'),
-            'user'   => $query->orderBy('user_name'),
             default  => $query->latest('created_at'),
         };
 
@@ -58,8 +84,37 @@ class ActivityLogController extends Controller
         $actions = ActivityLog::availableActions();
         $modules = ActivityLog::availableModules();
 
+        $activeFilterCount = 0;
+        if (! empty($selectedUserId)) {
+            $activeFilterCount++;
+        }
+        $activeFilterCount += count($selectedActions);
+        $activeFilterCount += count($selectedModules);
+        if ($selectedSort !== 'newest') {
+            $activeFilterCount++;
+        }
+        if ($from !== '') {
+            $activeFilterCount++;
+        }
+        if ($to !== '') {
+            $activeFilterCount++;
+        }
+
+        $hasActiveFilters = $activeFilterCount > 0;
+
         return view('admin.activity-logs.index', compact(
-            'logs', 'users', 'actions', 'modules'
+            'logs',
+            'users',
+            'actions',
+            'modules',
+            'selectedUserId',
+            'selectedActions',
+            'selectedModules',
+            'selectedSort',
+            'from',
+            'to',
+            'activeFilterCount',
+            'hasActiveFilters'
         ));
     }
 }
