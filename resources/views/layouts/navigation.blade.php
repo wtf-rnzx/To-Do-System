@@ -62,6 +62,13 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150">
+                            <img
+                                data-avatar-image
+                                src="{{ auth()->user()->profile_image_url }}"
+                                data-avatar-fallback="{{ url('/images/default-avatar.svg') }}"
+                                alt="{{ auth()->user()->name }} avatar"
+                                class="h-8 w-8 rounded-full object-cover ring-1 ring-gray-200 dark:ring-gray-700 me-2"
+                            >
                             <div>{{ auth()->user()->name }}</div>
 
                             <div class="ms-1">
@@ -147,9 +154,18 @@
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ auth()->user()->name }}</div>
+            <div class="px-4 flex items-center gap-3">
+                <img
+                    data-avatar-image
+                    src="{{ auth()->user()->profile_image_url }}"
+                    data-avatar-fallback="{{ url('/images/default-avatar.svg') }}"
+                    alt="{{ auth()->user()->name }} avatar"
+                    class="h-10 w-10 rounded-full object-cover ring-1 ring-gray-200 dark:ring-gray-700"
+                >
+                <div>
+                    <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ auth()->user()->name }}</div>
                 <div class="font-medium text-sm text-gray-500">{{ auth()->user()->email }}</div>
+                </div>
             </div>
 
             <div class="mt-3 space-y-1">

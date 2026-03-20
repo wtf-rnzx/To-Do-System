@@ -9,6 +9,62 @@
         </p>
     </header>
 
+    <div
+        id="profile-image-uploader"
+        class="mt-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+        data-upload-url="{{ url('/api/profile/image') }}"
+        data-remove-url="{{ url('/api/profile/image') }}"
+        data-max-size="2097152"
+        data-has-image="{{ $user->profile_image ? '1' : '0' }}"
+    >
+        <div class="flex items-center gap-4">
+            <img
+                data-avatar-image
+                src="{{ $user->profile_image_url }}"
+                data-avatar-fallback="{{ url('/images/default-avatar.svg') }}"
+                alt="{{ $user->name }} avatar"
+                class="h-20 w-20 rounded-full object-cover ring-2 ring-gray-200 dark:ring-gray-700"
+            >
+
+            <div class="flex-1">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('Profile Photo') }}</p>
+                <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                    {{ __('JPEG, PNG, or WebP up to 2MB. Images are auto-cropped to square and optimized before upload.') }}
+                </p>
+
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                    <input
+                        type="file"
+                        id="profile-image-input"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 dark:file:bg-gray-700 file:px-3 file:py-2 file:text-sm file:font-medium file:text-gray-700 dark:file:text-gray-200 hover:file:bg-gray-200 dark:hover:file:bg-gray-600"
+                    >
+
+                    <button
+                        type="button"
+                        id="profile-image-upload-btn"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 dark:hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150 disabled:opacity-50"
+                        disabled
+                    >
+                        {{ __('Upload Photo') }}
+                    </button>
+
+                    <button
+                        type="button"
+                        id="profile-image-remove-btn"
+                        class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150 disabled:opacity-50"
+                        {{ $user->profile_image ? '' : 'disabled' }}
+                    >
+                        {{ __('Remove Photo') }}
+                    </button>
+                </div>
+
+                <p id="profile-image-loading" class="mt-2 hidden text-xs text-indigo-600 dark:text-indigo-400"></p>
+                <p id="profile-image-error" class="mt-2 hidden text-xs text-red-600 dark:text-red-400"></p>
+            </div>
+        </div>
+    </div>
+
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
         @csrf
     </form>
