@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -37,7 +38,7 @@ class HomeController extends Controller
         return redirect()->route('home')->with('success', 'Weekly goal updated.');
     }
 
-    public function index()
+    public function index(Request $request)
     {
         if (Auth::check()) {
             $usertype = Auth::user()->usertype;
@@ -47,7 +48,7 @@ class HomeController extends Controller
             }
 
             if ($usertype === 'admin') {
-                return view('admin.adminHome', $this->getAdminDashboardData());
+                return view('admin.adminHome', $this->getAdminDashboardData($request));
             }
 
             return redirect()->back();
@@ -137,34 +138,200 @@ class HomeController extends Controller
 
     // ── Admin Dashboard ───────────────────────────────────────────────────
 
-    private function getAdminDashboardData(): array
+    private function getAdminDashboardData(Request $request): array
     {
-        $totalUsers     = User::count();
-        $totalTodos     = Todo::count();
-        $completedTodos = Todo::where('completed', true)->count();
-        $pendingTodos   = Todo::where('completed', false)->count();
-        $totalLogs      = ActivityLog::count();
+        $requestedGrowthRange = (string) $request->query('growth_range', 'daily');
+        $growthRange = match ($requestedGrowthRange) {
+            'today' => 'daily',
+            'this_week' => 'weekly',
+            'this_month' => 'monthly',
+            default => $requestedGrowthRange,
+        };
 
-        $systemCompletionPct = $totalTodos > 0
-            ? (int) round(($completedTodos / $totalTodos) * 100)
-            : 0;
+        if (!in_array($growthRange, ['daily', 'weekly', 'monthly'], true)) {
+            $growthRange = 'daily';
+        }
 
-        $trendData = $this->buildTrendData(Todo::query());
+        $totalUsers = User::count();
 
-        $topUsers = User::withCount(['todos as todos_count' => fn ($q) => $q->where('completed', true)])
-                        ->orderByDesc('todos_count')
-                        ->limit(5)
-                        ->get();
+        $activeUsers = User::whereIn(
+            'id',
+            ActivityLog::query()
+                ->select('user_id')
+                ->whereNotNull('user_id')
+                ->where('action', 'login')
+                ->where('created_at', '>=', now()->subDays(30))
+                ->distinct()
+        )->count();
+
+        $inactiveUsers = max(0, $totalUsers - $activeUsers);
+
+        $roles = User::query()
+            ->selectRaw('usertype, COUNT(*) as total')
+            ->groupBy('usertype')
+            ->pluck('total', 'usertype');
+
+        $orderedRoles = collect(['admin', 'user'])
+            ->map(fn (string $role) => [
+                'label' => ucfirst($role),
+                'value' => (int) ($roles[$role] ?? 0),
+            ]);
+
+        $customRoles = collect($roles)
+            ->except(['admin', 'user'])
+            ->map(fn ($total, $role) => [
+                'label' => ucfirst((string) $role),
+                'value' => (int) $total,
+            ])
+            ->values();
+
+        $roleDistribution = $orderedRoles
+            ->concat($customRoles)
+            ->values()
+            ->all();
+
+        $userGrowthData = $this->buildUserGrowthData($growthRange);
 
         $recentActivity = ActivityLog::latest()
                                      ->limit(10)
                                      ->get();
 
         return compact(
-            'totalUsers', 'totalTodos', 'completedTodos', 'pendingTodos',
-            'totalLogs', 'systemCompletionPct', 'trendData',
-            'topUsers', 'recentActivity'
+            'totalUsers', 'activeUsers', 'inactiveUsers', 'growthRange',
+            'roleDistribution', 'userGrowthData', 'recentActivity'
         );
+    }
+
+    private function buildUserGrowthData(string $range): array
+    {
+        return match ($range) {
+            'weekly' => $this->buildWeeklyUserGrowthData(),
+            'monthly' => $this->buildMonthlyUserGrowthData(),
+            default => $this->buildDailyUserGrowthData(),
+        };
+    }
+
+    private function buildDailyUserGrowthData(): array
+    {
+        $days = collect(range(13, 0))
+            ->map(fn (int $i) => today()->copy()->subDays($i));
+
+        $counts = User::query()
+            ->selectRaw('DATE(created_at) as bucket, COUNT(*) as total')
+            ->whereBetween('created_at', [
+                $days->first()->copy()->startOfDay(),
+                $days->last()->copy()->endOfDay(),
+            ])
+            ->groupByRaw('DATE(created_at)')
+            ->pluck('total', 'bucket');
+
+        $counts = $this->normalizeGrowthBuckets($counts->all());
+
+        return $days
+            ->map(fn ($day) => [
+                'label' => $day->format('M d'),
+                'value' => (int) ($counts[$day->toDateString()] ?? 0),
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function buildWeeklyUserGrowthData(): array
+    {
+        $weeks = collect(range(11, 0))
+            ->map(fn (int $i) => now()->copy()->startOfWeek()->subWeeks($i));
+
+        [$bucketSelect, $bucketGroup] = $this->resolveBucketSql('weekly');
+
+        $counts = User::query()
+            ->selectRaw("{$bucketSelect} as bucket, COUNT(*) as total")
+            ->whereBetween('created_at', [
+                $weeks->first()->copy()->startOfDay(),
+                $weeks->last()->copy()->endOfWeek()->endOfDay(),
+            ])
+            ->groupByRaw($bucketGroup)
+            ->pluck('total', 'bucket');
+
+        $counts = $this->normalizeGrowthBuckets($counts->all());
+
+        return $weeks
+            ->map(fn ($start) => [
+                'label' => $start->format('M d'),
+                'value' => (int) ($counts[$start->toDateString()] ?? 0),
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function buildMonthlyUserGrowthData(): array
+    {
+        $months = collect(range(11, 0))
+            ->map(fn (int $i) => now()->copy()->startOfMonth()->subMonths($i));
+
+        [$bucketSelect, $bucketGroup] = $this->resolveBucketSql('monthly');
+
+        $counts = User::query()
+            ->selectRaw("{$bucketSelect} as bucket, COUNT(*) as total")
+            ->whereBetween('created_at', [
+                $months->first()->copy()->startOfDay(),
+                $months->last()->copy()->endOfMonth()->endOfDay(),
+            ])
+            ->groupByRaw($bucketGroup)
+            ->pluck('total', 'bucket');
+
+        $counts = $this->normalizeGrowthBuckets($counts->all());
+
+        return $months
+            ->map(fn ($start) => [
+                'label' => $start->format('M Y'),
+                'value' => (int) ($counts[$start->toDateString()] ?? 0),
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function resolveBucketSql(string $range): array
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if ($range === 'weekly') {
+            if ($driver === 'pgsql') {
+                return [
+                    "DATE_TRUNC('week', created_at)::date",
+                    "DATE_TRUNC('week', created_at)::date",
+                ];
+            }
+
+            return [
+                'DATE_SUB(DATE(created_at), INTERVAL WEEKDAY(created_at) DAY)',
+                'DATE_SUB(DATE(created_at), INTERVAL WEEKDAY(created_at) DAY)',
+            ];
+        }
+
+        if ($range === 'monthly') {
+            if ($driver === 'pgsql') {
+                return [
+                    "DATE_TRUNC('month', created_at)::date",
+                    "DATE_TRUNC('month', created_at)::date",
+                ];
+            }
+
+            return [
+                "DATE_FORMAT(created_at, '%Y-%m-01')",
+                "DATE_FORMAT(created_at, '%Y-%m-01')",
+            ];
+        }
+
+        return ['DATE(created_at)', 'DATE(created_at)'];
+    }
+
+    private function normalizeGrowthBuckets(array $counts): array
+    {
+        return collect($counts)
+            ->mapWithKeys(fn ($count, $bucket) => [
+                substr((string) $bucket, 0, 10) => (int) $count,
+            ])
+            ->all();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

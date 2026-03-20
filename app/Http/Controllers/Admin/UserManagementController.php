@@ -11,30 +11,79 @@ class UserManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $role = $request->query('role', 'all'); // all|admin|user
+        $availableRoles = User::query()
+            ->select('usertype')
+            ->whereNotNull('usertype')
+            ->distinct()
+            ->pluck('usertype')
+            ->map(fn ($role) => strtolower((string) $role))
+            ->filter()
+            ->sort()
+            ->values()
+            ->all();
 
-        if (!in_array($role, ['all', 'admin', 'user'], true)) {
-            $role = 'all';
+        if ($availableRoles === []) {
+            $availableRoles = ['admin', 'user'];
         }
 
-        $date = $request->query('date');
+        $selectedRoles = $request->query('roles', []);
+        $selectedRoles = is_array($selectedRoles) ? $selectedRoles : [$selectedRoles];
+        $selectedRoles = collect($selectedRoles)
+            ->map(fn ($role) => strtolower(trim((string) $role)))
+            ->filter(fn ($role) => $role === 'all' || in_array($role, $availableRoles, true))
+            ->values()
+            ->all();
+
+        $legacyRole = strtolower((string) $request->query('role', ''));
+        if ($selectedRoles === [] && in_array($legacyRole, $availableRoles, true)) {
+            $selectedRoles = [$legacyRole];
+        }
+
+        if (in_array('all', $selectedRoles, true) || $selectedRoles === []) {
+            $selectedRoles = ['all'];
+        }
+
+        $from = (string) $request->query('from', '');
+        $to = (string) $request->query('to', '');
 
         $query = User::latest();
 
-        if ($role === 'admin') {
-            $query->where('usertype', 'admin');
-        } elseif ($role === 'user') {
-            $query->where('usertype', 'user');
+        if (! in_array('all', $selectedRoles, true)) {
+            $query->whereIn('usertype', $selectedRoles);
         }
 
-        // Apply date filter
-        if ($date) {
-            $query->whereDate('created_at', $date);
+        if ($from !== '') {
+            $query->whereDate('created_at', '>=', $from);
+        }
+
+        if ($to !== '') {
+            $query->whereDate('created_at', '<=', $to);
         }
 
         $users = $query->paginate(6)->appends(request()->query());
 
-        return view('admin.users.index', compact('users', 'role', 'date'));
+        $activeFilterCount = 0;
+        if (! in_array('all', $selectedRoles, true)) {
+            $activeFilterCount += count($selectedRoles);
+        }
+        if ($from !== '') {
+            $activeFilterCount++;
+        }
+        if ($to !== '') {
+            $activeFilterCount++;
+        }
+
+        $hasActiveFilters = $activeFilterCount > 0;
+
+        return view('admin.users.index', compact(
+            'users',
+            'availableRoles',
+            'selectedRoles',
+            'from',
+            'to',
+            'activeFilterCount',
+            'hasActiveFilters'
+        ));
     }
 
     public function toggleRole(User $user)

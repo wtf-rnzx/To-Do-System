@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Events\TaskCompleted;
 use App\Models\Todo;
 use App\Services\ActivityLogger;
 use App\Services\RecurringTodoService;
@@ -47,8 +48,14 @@ class TodoObserver
             properties:  ['todo_id' => $todo->id, 'changes' => $changes],
         );
 
-        if ($todo->wasChanged('completed') && $todo->completed && $todo->recurrence_type) {
-            $this->recurringTodoService->generateNextInstance($todo);
+        if ($todo->wasChanged('completed') && $todo->completed) {
+            if ($todo->user) {
+                TaskCompleted::dispatch($todo->user, $todo);
+            }
+
+            if ($todo->recurrence_type) {
+                $this->recurringTodoService->generateNextInstance($todo);
+            }
         }
     }
 

@@ -5,113 +5,136 @@
         </h2>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-12" x-data="{ openFilters: false }" @keydown.escape.window="openFilters = false">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
-
-            {{-- ── Filter Card ─────────────────────────────────────────────────── --}}
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-5">
-                    <form method="GET" action="{{ route('admin.logs.index') }}"
-                          class="flex flex-wrap items-end gap-3">
-
-                        {{-- Search --}}
-                        <div class="flex flex-col gap-1 flex-1 min-w-[180px]">
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Search</label>
-                            <input type="text" name="search" value="{{ request('search') }}"
-                                   placeholder="User, description, IP…"
-                                   class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
-                        </div>
-
-                        {{-- Date Range (single grouped control) --}}
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Date</label>
-                            <div class="flex items-center gap-1.5">
-                                <input type="date" name="from" value="{{ request('from') }}"
-                                       class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
-                                <span class="text-gray-400 dark:text-gray-500 text-xs select-none">→</span>
-                                <input type="date" name="to" value="{{ request('to') }}"
-                                       class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
-                            </div>
-                        </div>
-
-                        {{-- User Filter --}}
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">User</label>
-                            <select name="user_id"
-                                    class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                                <option value="">All Users</option>
-                                @foreach ($users as $u)
-                                    <option value="{{ $u->id }}"
-                                            {{ request('user_id') == $u->id ? 'selected' : '' }}>
-                                        {{ $u->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        {{-- Action Filter --}}
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Action</label>
-                            <select name="action"
-                                    class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                                <option value="">All Actions</option>
-                                @foreach ($actions as $act)
-                                    <option value="{{ $act }}"
-                                            {{ request('action') === $act ? 'selected' : '' }}>
-                                        {{ ucfirst(str_replace('_', ' ', $act)) }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        {{-- Module Filter --}}
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Module</label>
-                            <select name="module"
-                                    class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                                <option value="">All Modules</option>
-                                @foreach ($modules as $mod)
-                                    <option value="{{ $mod }}"
-                                            {{ request('module') === $mod ? 'selected' : '' }}>
-                                        {{ ucfirst($mod) }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        {{-- Sort --}}
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Sort</label>
-                            <select name="sort"
-                                    class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
-                                <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Newest First</option>
-                                <option value="oldest" {{ request('sort') === 'oldest' ? 'selected' : '' }}>Oldest First</option>
-                                <option value="user"   {{ request('sort') === 'user'   ? 'selected' : '' }}>By User</option>
-                            </select>
-                        </div>
-
-                        {{-- Buttons --}}
-                        <div class="flex gap-2">
-                            <button type="submit"
-                                    class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-md">
-                                Apply
-                            </button>
-                            <a href="{{ route('admin.logs.index') }}"
-                               class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-sm font-medium py-2 px-4 rounded-md">
-                                Clear
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
 
             {{-- ── Activity Feed ────────────────────────────────────────────────── --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="px-6 pt-5 pb-1 flex items-center justify-between border-b border-gray-100 dark:border-gray-700">
                     <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100">Activity Log</h3>
-                    <span class="text-sm text-gray-400 dark:text-gray-500">
-                        {{ number_format($logs->total()) }} {{ Str::plural('entry', $logs->total()) }}
-                    </span>
+                    <div class="relative flex items-center gap-3">
+                        <span class="text-sm text-gray-400 dark:text-gray-500">
+                            {{ number_format($logs->total()) }} {{ \Illuminate\Support\Str::plural('entry', $logs->total()) }}
+                        </span>
+
+                        <button type="button"
+                                class="relative inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                @click="openFilters = !openFilters"
+                                :aria-expanded="openFilters.toString()"
+                                aria-controls="activity-filter-panel"
+                                aria-label="Open activity log filters">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6.75 12h10.5M10.5 19.5h3" />
+                            </svg>
+
+                            @if ($hasActiveFilters ?? false)
+                                <span class="absolute -top-1 -right-1 min-w-[1rem] h-4 px-1 rounded-full bg-indigo-600 text-white text-[10px] leading-4 text-center font-semibold ring-2 ring-white dark:ring-gray-800">
+                                    {{ $activeFilterCount }}
+                                </span>
+                            @endif
+                        </button>
+
+                        <div id="activity-filter-panel"
+                             x-cloak
+                             x-show="openFilters"
+                             x-transition.origin.top.right
+                             @click.outside="openFilters = false"
+                             class="absolute right-0 top-10 z-40 w-[24rem] max-w-[92vw] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+                             role="dialog"
+                             aria-label="Activity log filters">
+                            <form method="GET" action="{{ route('admin.logs.index') }}" class="p-4 space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">Filters</h4>
+                                    <a href="{{ route('admin.logs.index') }}" class="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                        Clear
+                                    </a>
+                                </div>
+
+                                <div>
+                                    <label for="activity-user" class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">User</label>
+                                    <select id="activity-user"
+                                            name="user_id"
+                                            class="mt-2 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                                        <option value="">All Users</option>
+                                        @foreach ($users as $u)
+                                            <option value="{{ $u->id }}" {{ (string)($selectedUserId ?? '') === (string)$u->id ? 'selected' : '' }}>
+                                                {{ $u->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <fieldset>
+                                    <legend class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Action</legend>
+                                    <div class="mt-2 grid grid-cols-2 gap-2 text-sm max-h-32 overflow-y-auto pr-1">
+                                        @foreach ($actions as $act)
+                                            <label class="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/60 cursor-pointer">
+                                                <input type="checkbox"
+                                                       name="actions[]"
+                                                       value="{{ $act }}"
+                                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                                                       {{ in_array($act, $selectedActions ?? [], true) ? 'checked' : '' }}>
+                                                <span class="text-gray-700 dark:text-gray-200">{{ ucfirst(str_replace('_', ' ', $act)) }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </fieldset>
+
+                                <fieldset>
+                                    <legend class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Module</legend>
+                                    <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                                        @foreach ($modules as $mod)
+                                            <label class="inline-flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/60 cursor-pointer">
+                                                <input type="checkbox"
+                                                       name="modules[]"
+                                                       value="{{ $mod }}"
+                                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                                                       {{ in_array($mod, $selectedModules ?? [], true) ? 'checked' : '' }}>
+                                                <span class="text-gray-700 dark:text-gray-200">{{ ucfirst($mod) }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </fieldset>
+
+                                <div>
+                                    <label for="activity-sort" class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Sort</label>
+                                    <select id="activity-sort"
+                                            name="sort"
+                                            class="mt-2 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                                        <option value="newest" {{ ($selectedSort ?? 'newest') === 'newest' ? 'selected' : '' }}>Newest First</option>
+                                        <option value="oldest" {{ ($selectedSort ?? 'newest') === 'oldest' ? 'selected' : '' }}>Oldest First</option>
+                                    </select>
+                                </div>
+
+                                <fieldset>
+                                    <legend class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Date Range</legend>
+                                    <div class="mt-2 grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label for="activity-from" class="sr-only">From date</label>
+                                            <input id="activity-from" type="date" name="from" value="{{ $from ?? '' }}"
+                                                   class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
+                                        </div>
+                                        <div>
+                                            <label for="activity-to" class="sr-only">To date</label>
+                                            <input id="activity-to" type="date" name="to" value="{{ $to ?? '' }}"
+                                                   class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
+                                        </div>
+                                    </div>
+                                </fieldset>
+
+                                <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                    <a href="{{ route('admin.logs.index') }}"
+                                       class="inline-flex items-center rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 text-sm font-medium py-2 px-3">
+                                        Clear
+                                    </a>
+                                    <button type="submit"
+                                            class="inline-flex items-center rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-3">
+                                        Apply
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
 
                 @php $prevDate = null; @endphp
@@ -291,7 +314,7 @@
                         </div>
                         <p class="text-sm font-semibold text-gray-500 dark:text-gray-400">No activity logs found.</p>
                         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Try adjusting your filters.</p>
-                        @if (request()->hasAny(['search','from','to','user_id','action','module']))
+                        @if (request()->hasAny(['from','to','user_id','actions','modules','sort']))
                             <a href="{{ route('admin.logs.index') }}"
                                class="mt-3 inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium">
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -315,3 +338,9 @@
         </div>
     </div>
 </x-app-layout>
+
+<style>
+[x-cloak] {
+    display: none !important;
+}
+</style>

@@ -76,16 +76,20 @@ class ActivityLog extends Model
     public function actionBadgeClass(): string
     {
         return match ($this->action) {
-            'login'           => 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-            'logout'          => 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-            'created'         => 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-            'updated'         => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-            'deleted'         => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-            'toggled'         => 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-            'role_updated'    => 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-            'profile_updated' => 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
-            'account_deleted' => 'bg-red-200 text-red-800 dark:bg-red-800/40 dark:text-red-200',
-            default           => 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+            // Success / positive actions
+            'login', 'created', 'inserted', 'insert' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200',
+
+            // Neutral informational actions
+            'logout', 'toggled' => 'bg-slate-100 text-slate-800 dark:bg-slate-700/70 dark:text-slate-200',
+
+            // Update / warning actions
+            'updated', 'role_updated', 'profile_updated', 'update' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200',
+
+            // Danger actions
+            'deleted', 'account_deleted', 'delete' => 'bg-rose-100 text-rose-800 dark:bg-rose-900/65 dark:text-rose-200',
+
+            // Fallback informational style
+            default => 'bg-sky-100 text-sky-800 dark:bg-sky-900/60 dark:text-sky-200',
         };
     }
 
