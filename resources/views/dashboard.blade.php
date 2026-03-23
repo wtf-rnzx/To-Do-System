@@ -169,6 +169,13 @@
                     </div>
                 </div>
 
+                <div class="col-span-2 md:col-span-3">
+                    <x-experience.progress-card
+                        :experience="$experience"
+                        title="Experience & Rank"
+                    />
+                </div>
+
                 {{-- ── Row 2: Trend Chart + Completion Ring ─────────────────── --}}
 
                 <div class="col-span-2 md:col-span-4 h-52">
