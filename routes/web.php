@@ -42,6 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Todo routes
+    Route::delete('todos/bulk-destroy', [TodoController::class, 'bulkDestroy'])->name('todos.bulk-destroy');
     Route::resource('todos', TodoController::class);
     Route::patch('todos/{todo}/toggle', [TodoController::class, 'toggle'])->name('todos.toggle');
     Route::patch('todos/{todo}/snooze', [TodoController::class, 'snooze'])->name('todos.snooze');
