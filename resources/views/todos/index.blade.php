@@ -256,10 +256,10 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                                 <!-- Toggle Complete -->
-                                                <form action="{{ route('todos.toggle', $todo) }}" method="POST">
+                                                <form action="{{ route('todos.toggle', $todo) }}" method="POST" class="js-status-toggle-form" data-no-row-click>
                                                     @csrf
                                                     @method('PATCH')
-                                                    <button type="submit" class="focus:outline-none">
+                                                    <button type="submit" class="focus:outline-none js-status-toggle-button" data-no-row-click aria-label="Toggle completion for {{ $todo->title }}">
                                                         @if($todo->completed)
                                                             <svg class="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
@@ -385,6 +385,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const getRows = () => Array.from(tableBody.querySelectorAll('tr.js-todo-row[data-todo-id]'));
 
+    const completedIconSvg = `
+        <svg class="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+        </svg>
+    `;
+
+    const pendingIconSvg = `
+        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+        </svg>
+    `;
+
     const getVisibleIds = () => getRows()
         .map((row) => Number(row.dataset.todoId))
         .filter((id) => Number.isInteger(id) && id > 0);
@@ -392,6 +404,72 @@ document.addEventListener('DOMContentLoaded', function () {
     const closeMenu = () => {
         menu.classList.add('hidden');
         menuButton.setAttribute('aria-expanded', 'false');
+    };
+
+    const showFloatingExp = (originElement, expGained) => {
+        if (!originElement || !expGained || expGained <= 0) {
+            return;
+        }
+
+        const rect = originElement.getBoundingClientRect();
+        const indicator = document.createElement('div');
+        indicator.className = 'exp-floating-indicator';
+        indicator.textContent = `+${expGained} EXP`;
+        indicator.style.left = `${rect.left + rect.width / 2}px`;
+        indicator.style.top = `${Math.max(12, rect.top - 8)}px`;
+
+        document.body.appendChild(indicator);
+        window.setTimeout(() => indicator.remove(), 1200);
+    };
+
+    const showLevelUpFeedback = () => {
+        const badge = document.createElement('div');
+        badge.className = 'level-up-badge';
+        badge.innerHTML = `<span class="text-lg">✨</span><span>Level Up!</span>`;
+        document.body.appendChild(badge);
+
+        const confettiColors = ['#8b5cf6', '#6366f1', '#22c55e', '#f59e0b', '#ef4444'];
+        const burstContainer = document.createElement('div');
+        burstContainer.className = 'level-up-burst';
+
+        for (let i = 0; i < 18; i += 1) {
+            const piece = document.createElement('span');
+            piece.className = 'level-up-confetti';
+            piece.style.backgroundColor = confettiColors[i % confettiColors.length];
+            piece.style.setProperty('--dx', `${(Math.random() - 0.5) * 180}px`);
+            piece.style.setProperty('--dy', `${-40 - Math.random() * 140}px`);
+            piece.style.left = '50%';
+            piece.style.top = '60px';
+            burstContainer.appendChild(piece);
+        }
+
+        document.body.appendChild(burstContainer);
+        window.setTimeout(() => {
+            badge.remove();
+            burstContainer.remove();
+        }, 1600);
+    };
+
+    const dispatchExpSyncEvent = (experiencePayload) => {
+        window.dispatchEvent(new window.CustomEvent('todo:experience-updated', {
+            detail: experiencePayload,
+        }));
+    };
+
+    const updateKnownExpWidgets = (experiencePayload) => {
+        if (!experiencePayload) {
+            return;
+        }
+
+        const expValueEls = document.querySelectorAll('[data-user-total-exp]');
+        expValueEls.forEach((el) => {
+            el.textContent = String(experiencePayload.total_exp ?? el.textContent);
+        });
+
+        const rankEls = document.querySelectorAll('[data-user-rank]');
+        rankEls.forEach((el) => {
+            el.textContent = String(experiencePayload.current_rank ?? el.textContent);
+        });
     };
 
     const showFeedback = (type, message) => {
@@ -558,6 +636,60 @@ document.addEventListener('DOMContentLoaded', function () {
 
         syncRowSelectionUi();
         updateBulkUiState();
+    });
+
+    tableBody.addEventListener('submit', async function (event) {
+        const form = event.target.closest('.js-status-toggle-form');
+        if (!form) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const button = form.querySelector('.js-status-toggle-button');
+        if (!button) {
+            return;
+        }
+
+        const row = form.closest('tr.js-todo-row');
+
+        button.disabled = true;
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'PATCH',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                showFeedback('error', result.message || 'Unable to update task status.');
+                return;
+            }
+
+            const isCompleted = !!result?.todo?.completed;
+            button.innerHTML = isCompleted ? completedIconSvg : pendingIconSvg;
+
+            const gained = Number(result?.experience?.exp_gained || 0);
+            if (isCompleted && gained > 0) {
+                showFloatingExp(button, gained);
+                updateKnownExpWidgets(result.experience);
+                dispatchExpSyncEvent(result.experience);
+
+                if (result?.experience?.leveled_up) {
+                    showLevelUpFeedback();
+                }
+            }
+        } catch (error) {
+            showFeedback('error', 'Something went wrong while updating task status. Please try again.');
+        } finally {
+            button.disabled = false;
+        }
     });
 
     headerRowSelector.addEventListener('change', function () {
@@ -756,5 +888,103 @@ document.addEventListener('keydown', function (e) {
 <style>
 [x-cloak] {
     display: none !important;
+}
+
+.exp-floating-indicator {
+    position: fixed;
+    z-index: 70;
+    transform: translate(-50%, 0);
+    pointer-events: none;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #16a34a;
+    text-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+    animation: exp-float-up 1s ease-out forwards;
+}
+
+.dark .exp-floating-indicator {
+    color: #4ade80;
+}
+
+@keyframes exp-float-up {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+    15% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -36px);
+    }
+}
+
+.level-up-badge {
+    position: fixed;
+    top: 88px;
+    right: 24px;
+    z-index: 75;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 9999px;
+    padding: 0.5rem 0.85rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(99, 102, 241, 0.95));
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 12px 28px rgba(99, 102, 241, 0.35);
+    animation: level-up-pulse 1.3s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes level-up-pulse {
+    0% {
+        opacity: 0;
+        transform: scale(0.75);
+        box-shadow: 0 0 0 rgba(99, 102, 241, 0.2);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1.05);
+        box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.18);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1);
+        box-shadow: 0 0 0 24px rgba(99, 102, 241, 0);
+    }
+}
+
+.level-up-burst {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 74;
+}
+
+.level-up-confetti {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    opacity: 0;
+    animation: level-up-confetti-fly 1.15s ease-out forwards;
+}
+
+@keyframes level-up-confetti-fly {
+    0% {
+        opacity: 0;
+        transform: translate(0, 0) scale(0.6) rotate(0deg);
+    }
+    15% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--dx), var(--dy)) scale(1) rotate(280deg);
+    }
 }
 </style>

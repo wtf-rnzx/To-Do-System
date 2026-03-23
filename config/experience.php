@@ -1,8 +1,11 @@
 <?php
 
 return [
-    // EXP awarding strategy: fixed or weighted by task priority.
-    'mode' => env('EXP_MODE', 'fixed'), // fixed|weighted
+    // EXP awarding strategy.
+    // - priority: uses explicit per-priority points from priority_points.
+    // - weighted: uses base_points * priority_multipliers.
+    // - fixed: uses base_points only.
+    'mode' => env('EXP_MODE', 'priority'), // priority|fixed|weighted
 
     // Used in fixed mode, and as base value in weighted mode.
     'base_points' => (int) env('EXP_BASE_POINTS', 10),
@@ -12,6 +15,13 @@ return [
         'low' => 1.0,
         'medium' => 1.5,
         'high' => 2.0,
+    ],
+
+    // Explicit per-priority EXP awards used in priority mode.
+    'priority_points' => [
+        'low' => (int) env('EXP_LOW_POINTS', 10),
+        'medium' => (int) env('EXP_MEDIUM_POINTS', 15),
+        'high' => (int) env('EXP_HIGH_POINTS', 20),
     ],
 
     // Ordered ranks by min_exp ascending.
