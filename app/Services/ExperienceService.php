@@ -12,14 +12,21 @@ class ExperienceService
     public function calculateAward(Todo $todo): int
     {
         $basePoints = max(1, (int) config('experience.base_points', 10));
-        $mode = (string) config('experience.mode', 'weighted');
+        $mode = (string) config('experience.mode', 'priority');
+        $priority = (string) ($todo->priority ?? 'medium');
+
+        if ($mode === 'priority') {
+            $priorityPoints = config('experience.priority_points', []);
+            $configuredPoints = (int) ($priorityPoints[$priority] ?? ($priorityPoints['medium'] ?? $basePoints));
+
+            return max(1, $configuredPoints);
+        }
 
         if ($mode === 'fixed') {
             return $basePoints;
         }
 
         $multipliers = config('experience.priority_multipliers', []);
-        $priority = (string) ($todo->priority ?? 'medium');
         $multiplier = (float) ($multipliers[$priority] ?? ($multipliers['medium'] ?? 1.0));
 
         return max(1, (int) round($basePoints * $multiplier));

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Todo;
 use App\Models\TodoSnoozeHistory;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rule;
@@ -407,20 +408,59 @@ class TodoController extends Controller
     }
 
     // Toggle completion status
-    public function toggle(Todo $todo)
+    public function toggle(Request $request, Todo $todo)
     {
         abort_unless($todo->user_id === auth()->id(), 403);
 
         Log::info('Toggling completion status for todo with ID: ' . $todo->id);
 
         try{
+            $user = User::query()->find(auth()->id());
+            $previousExp = (int) ($user?->total_exp ?? 0);
+            $previousRank = (string) ($user?->current_rank ?? '');
+
              $todo->update([
                 'completed' => !$todo->completed,
             ]);
 
+            $todo->refresh();
+
+            if ($user) {
+                $user = User::query()->find($user->id);
+            }
+
+            $currentExp = (int) ($user?->total_exp ?? $previousExp);
+            $currentRank = (string) ($user?->current_rank ?? $previousRank);
+            $expGained = max(0, $currentExp - $previousExp);
+            $leveledUp = $expGained > 0 && $previousRank !== $currentRank;
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $todo->completed
+                        ? 'Todo marked as completed.'
+                        : 'Todo marked as pending.',
+                    'todo' => [
+                        'id' => $todo->id,
+                        'completed' => (bool) $todo->completed,
+                    ],
+                    'experience' => [
+                        'exp_gained' => $expGained,
+                        'total_exp' => $currentExp,
+                        'leveled_up' => $leveledUp,
+                        'previous_rank' => $previousRank,
+                        'current_rank' => $currentRank,
+                    ],
+                ]);
+            }
+
             return redirect()->route('todos.index');
         } catch (Exception $e) {
             Log::error('Error toggling todo status: ' . $e->getMessage());
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'An error occurred while toggling the todo status.',
+                ], 500);
+            }
             return redirect()->back()->with('error', 'An error occurred while toggling the todo status.');
         }
     }
