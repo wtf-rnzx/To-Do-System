@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\Todo;
 use App\Models\User;
+use App\Services\ExperienceService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -13,6 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
+    public function __construct(
+        private readonly ExperienceService $experienceService,
+    ) {}
+
     public function updateWeeklyGoal(Request $request)
     {
         /** @var User $user */
@@ -129,10 +134,22 @@ class HomeController extends Controller
             break;
         }
 
+        // Keep rank/progress synchronized for legacy users without EXP updates yet.
+        $experience = $this->experienceService->buildProgressForUser($user);
+        $user->forceFill([
+            'current_rank' => $experience['current_rank']['key'],
+            'rank_progress_pct' => $experience['progress_pct'],
+        ]);
+
+        if ($user->isDirty(['current_rank', 'rank_progress_pct'])) {
+            $user->save();
+        }
+
         return compact(
             'totalTodos', 'completedTodos', 'pendingTodos', 'overdueTodos',
             'completionPct', 'trendData', 'recentTodos', 'recentActivity',
-            'completedToday', 'dailyStreak', 'weeklyGoal', 'weeklyCompleted', 'weeklyGoalPct'
+            'completedToday', 'dailyStreak', 'weeklyGoal', 'weeklyCompleted', 'weeklyGoalPct',
+            'experience'
         );
     }
 

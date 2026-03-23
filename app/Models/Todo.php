@@ -19,6 +19,7 @@ class Todo extends Model
         'completed',
         'due_date',
         'completed_at',
+        'exp_awarded_at',
         'priority',
         'recurrence_type',
         'recurrence_origin_id',
@@ -29,6 +30,7 @@ class Todo extends Model
         'completed' => 'boolean',
         'due_date' => 'date',
         'completed_at' => 'datetime',
+        'exp_awarded_at' => 'datetime',
     ];
 
     protected static function booted(): void

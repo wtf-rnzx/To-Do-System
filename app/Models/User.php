@@ -29,6 +29,9 @@ class User extends Authenticatable
         'password',
         'profile_image',
         'weekly_goal',
+        'total_exp',
+        'current_rank',
+        'rank_progress_pct',
     ];
 
     /**
@@ -59,6 +62,8 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'weekly_goal' => 'integer',
+        'total_exp' => 'integer',
+        'rank_progress_pct' => 'integer',
     ];
 
     public function todos(): HasMany

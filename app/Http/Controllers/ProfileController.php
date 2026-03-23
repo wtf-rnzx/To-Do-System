@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\UserAchievement;
 use App\Services\ActivityLogger;
+use App\Services\ExperienceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -14,6 +15,10 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        private readonly ExperienceService $experienceService,
+    ) {}
+
     /**
      * Display the user's profile form.
      */
@@ -29,9 +34,20 @@ class ProfileController extends Controller
             ->orderByDesc('unlocked_at')
             ->get();
 
+        $experience = $this->experienceService->buildProgressForUser($user);
+        $user->forceFill([
+            'current_rank' => $experience['current_rank']['key'],
+            'rank_progress_pct' => $experience['progress_pct'],
+        ]);
+
+        if ($user->isDirty(['current_rank', 'rank_progress_pct'])) {
+            $user->save();
+        }
+
         return view('profile.edit', [
             'user' => $user,
             'visibleAchievements' => $visibleAchievements,
+            'experience' => $experience,
         ]);
     }
 

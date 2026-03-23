@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\AwardTaskExperience;
 use App\Listeners\LogUserLogin;
 use App\Listeners\LogUserLogout;
 use App\Listeners\EvaluateUserAchievements;
@@ -32,6 +33,7 @@ class EventServiceProvider extends ServiceProvider
             LogUserLogout::class,
         ],
         TaskCompleted::class => [
+            AwardTaskExperience::class,
             EvaluateUserAchievements::class,
         ],
         AchievementUnlocked::class => [
