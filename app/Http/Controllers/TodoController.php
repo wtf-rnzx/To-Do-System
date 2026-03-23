@@ -326,6 +326,71 @@ class TodoController extends Controller
         }
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'todo_ids' => ['nullable', 'array'],
+            'todo_ids.*' => ['integer', 'distinct'],
+            'delete_all_visible' => ['nullable', 'boolean'],
+            'visible_ids' => ['nullable', 'array'],
+            'visible_ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $selectedIds = collect($validated['todo_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $deleteAllVisible = (bool) ($validated['delete_all_visible'] ?? false);
+
+        $visibleIds = collect($validated['visible_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $targetIds = $selectedIds;
+
+        if ($deleteAllVisible) {
+            $targetIds = $visibleIds;
+        }
+
+        if ($targetIds->isEmpty()) {
+            return response()->json([
+                'message' => 'No todos were selected for deletion.',
+                'deleted_count' => 0,
+                'deleted_ids' => [],
+            ], 422);
+        }
+
+        $ownedTodos = Todo::query()
+            ->where('user_id', auth()->id())
+            ->whereIn('id', $targetIds)
+            ->pluck('id');
+
+        if ($ownedTodos->isEmpty()) {
+            return response()->json([
+                'message' => 'No valid todos found to delete.',
+                'deleted_count' => 0,
+                'deleted_ids' => [],
+            ], 422);
+        }
+
+        Todo::query()
+            ->where('user_id', auth()->id())
+            ->whereIn('id', $ownedTodos)
+            ->delete();
+
+        return response()->json([
+            'message' => $ownedTodos->count() === 1
+                ? '1 todo deleted successfully.'
+                : $ownedTodos->count() . ' todos deleted successfully.',
+            'deleted_count' => $ownedTodos->count(),
+            'deleted_ids' => $ownedTodos->values()->all(),
+        ]);
+    }
+
     public function show(Todo $todo)
     {
         abort_unless($todo->user_id === auth()->id(), 403);

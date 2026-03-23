@@ -11,6 +11,21 @@
                     Back
                 </a>
 
+                <form
+                    action="{{ route('todos.destroy', $todo) }}"
+                    method="POST"
+                    onsubmit="return confirm('Delete this todo? This action cannot be undone.');"
+                >
+                    @csrf
+                    @method('DELETE')
+                    <button
+                        type="submit"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                        Delete
+                    </button>
+                </form>
+
                 <!-- <a href="{{ route('todos.edit', $todo) }}"
                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                     Edit
