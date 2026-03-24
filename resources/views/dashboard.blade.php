@@ -169,6 +169,8 @@
                     </div>
                 </div>
 
+                {{-- ── Row 2: Experience + Task Activity ───────────────────── --}}
+
                 <div class="col-span-2 md:col-span-3">
                     <x-experience.progress-card
                         :experience="$experience"
@@ -176,16 +178,16 @@
                     />
                 </div>
 
-                {{-- ── Row 2: Trend Chart + Completion Ring ─────────────────── --}}
-
-                <div class="col-span-2 md:col-span-4 h-52">
+                <div class="col-span-2 md:col-span-3 h-56">
                     <x-dashboard.trend-chart
                         :data="$trendData"
                         title="Task Activity — Last 7 Days"
                         color="blue" />
                 </div>
 
-                <div class="col-span-2 md:col-span-2 h-52">
+                {{-- ── Row 3: Progress + Recent Tasks + Quick Actions ──────── --}}
+
+                <div class="col-span-2 md:col-span-2 h-56">
                     <x-dashboard.completion-ring
                         :percentage="$completionPct"
                         label="My Progress"
@@ -193,9 +195,7 @@
                         color="indigo" />
                 </div>
 
-                {{-- ── Row 3: Recent Todos + Quick Actions ──────────────────── --}}
-
-                <div class="col-span-2 md:col-span-4 h-56">
+                <div class="col-span-2 md:col-span-2 h-56">
                     <x-dashboard.recent-todos
                         :todos="$recentTodos"
                         title="Recent Tasks" />
