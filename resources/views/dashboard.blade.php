@@ -71,11 +71,9 @@
                     icon-bg="bg-orange-50 dark:bg-orange-900/20"
                     :sublabel="$dailyStreak . ' day(s) in a row'">
                     <x-slot:icon>
-                        <svg class="h-5 w-5 text-orange-600 dark:text-orange-400" fill="none"
-                             stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M15.362 5.214A8.252 8.252 0 0112 5.25c-2.29 0-4.34.932-5.82 2.436m0 0A8.25 8.25 0 104.5 12c0-1.03.19-2.015.537-2.923m0 0A8.223 8.223 0 016.18 7.686m0 0L3.75 6m2.43 1.686L6.75 3.75" />
-                        </svg>
+                        <span class="h-5 w-5 text-orange-600 dark:text-orange-400 text-lg flex items-center justify-center">
+                            🔥
+                        </span>
                     </x-slot:icon>
                 </x-dashboard.stat-card>
 
