@@ -1,10 +1,16 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="light">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>StagStack</title>
+        <script>
+            (function () {
+                const savedTheme = localStorage.getItem('stagstack-theme') || 'light';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            })();
+        </script>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -37,6 +43,11 @@
                 background-position: center;
                 background-repeat: no-repeat;
                 overflow: hidden;
+                transition: background-image 0.3s ease;
+            }
+
+            [data-theme='dark'] .landing {
+                background-image: url("{{ asset('images/StagStack-landing-dark.png') }}");
             }
 
             .landing::before {
@@ -44,6 +55,11 @@
                 position: absolute;
                 inset: 0;
                 background: rgba(0, 0, 0, 0.52);
+                transition: background 0.3s ease;
+            }
+
+            [data-theme='dark'] .landing::before {
+                background: rgba(1, 8, 24, 0.72);
             }
 
             .hero {
@@ -61,7 +77,56 @@
                 width: min(52vw, 260px);
                 height: auto;
                 filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.35));
+                transition: opacity 0.3s ease;
             }
+
+            [data-theme='dark'] .logo-light {
+                display: none;
+            }
+
+            [data-theme='light'] .logo-dark {
+                display: none;
+            }
+
+            .theme-toggle {
+                position: absolute;
+                top: 1.5rem;
+                right: 1.5rem;
+                z-index: 10;
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                width: 44px;
+                height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                backdrop-filter: blur(8px);
+                color: #fff;
+                transition: all 0.2s ease;
+            }
+
+            .theme-toggle:hover {
+                background: rgba(255, 255, 255, 0.25);
+                transform: scale(1.05);
+            }
+
+            .theme-toggle svg {
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
+                transition: all 0.3s ease;
+            }
+            
+            [data-theme='dark'] .theme-toggle {
+                background: rgba(0, 0, 0, 0.4);
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+            
+            /* Show correct icon */
+            [data-theme='light'] .icon-sun { display: none; }
+            [data-theme='dark'] .icon-moon { display: none; }
 
             .title {
                 margin: 0;
@@ -72,6 +137,10 @@
                 text-shadow: 0 5px 20px rgba(0, 0, 0, 0.38);
             }
 
+            [data-theme='dark'] .title {
+                text-shadow: 0 5px 20px rgba(1, 8, 24, 0.8);
+            }
+
             .quote {
                 margin: 0;
                 max-width: 38ch;
@@ -80,6 +149,11 @@
                 font-weight: 500;
                 color: rgba(255, 255, 255, 0.92);
                 text-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+            }
+
+            [data-theme='dark'] .quote {
+                color: rgba(255, 255, 255, 0.85);
+                text-shadow: 0 4px 16px rgba(1, 8, 24, 0.9);
             }
 
             .auth-links {
@@ -110,6 +184,16 @@
                 transform: translateY(-1px);
                 background: rgba(255, 255, 255, 0.16);
                 border-color: rgba(255, 255, 255, 0.44);
+            }
+            
+            [data-theme='dark'] .auth-link {
+                border-color: rgba(255, 255, 255, 0.15);
+                background: rgba(0, 0, 0, 0.4);
+            }
+            
+            [data-theme='dark'] .auth-link:hover {
+                background: rgba(0, 0, 0, 0.6);
+                border-color: rgba(255, 255, 255, 0.3);
             }
 
             .animated {
@@ -167,8 +251,17 @@
     </head>
     <body>
         <main class="landing" role="main">
+            <!-- Theme Toggle Button -->
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle Dark Mode">
+                <!-- Moon icon for light mode (click to go dark) -->
+                <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.64 13a1 1 0 01-1.05-.14 8.05 8.05 0 01-3.37-7.37 1 1 0 011.64-.81 10 10 0 102.78 8.32 1 1 0 010 0z"/></svg>
+                <!-- Sun icon for dark mode (click to go light) -->
+                <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 17a5 5 0 110-10 5 5 0 010 10zm0-2a3 3 0 100-6 3 3 0 000 6zm0-13a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm0 19a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM5 12a1 1 0 01-1-1H2a1 1 0 110-2h2a1 1 0 011 1zm19 0a1 1 0 01-1 1h-2a1 1 0 110-2h2a1 1 0 011 1zM7.05 7.05a1 1 0 011.41-1.41l1.42 1.41a1 1 0 11-1.42 1.42L7.05 7.05zm12.73 12.73a1 1 0 01-1.41 1.41l-1.42-1.41a1 1 0 111.42-1.42l1.41 1.42zM7.05 16.95a1 1 0 011.41 1.41l1.42-1.41a1 1 0 11-1.42-1.42l-1.42 1.41zm12.73-12.73a1 1 0 01-1.41-1.41l-1.42 1.41a1 1 0 111.42-1.42l1.41 1.42z"/></svg>
+            </button>
+
             <section class="hero" aria-label="StagStack landing hero">
-                <img class="logo animated" src="{{ asset('images/StagStack-lightTheme.png') }}" alt="StagStack logo">
+                <img class="logo animated logo-light" src="{{ asset('images/StagStack-lightTheme.png') }}" alt="StagStack logo">
+                <img class="logo animated logo-dark" src="{{ asset('images/StagStack-darkTheme.png') }}" alt="StagStack logo">
                 <h1 class="title animated">StagStack</h1>
                 <p class="quote animated">From scattered tasks to stacked wins—build momentum one focused move at a time.</p>
 
@@ -187,6 +280,18 @@
                 @endif
             </section>
         </main>
-        </div>
+        
+        <script>
+            const themeToggleBtn = document.getElementById('themeToggle');
+            const htmlElement = document.documentElement;
+
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                htmlElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('stagstack-theme', newTheme);
+            });
+        </script>
     </body>
 </html>

@@ -11,8 +11,8 @@
             shadow-sm p-4 flex flex-col justify-between h-full">
     <div class="flex items-start justify-between gap-3">
         <div class="flex flex-col gap-1 min-w-0">
-            <span class="text-xs font-semibold uppercase tracking-widest
-                         text-gray-500 dark:text-gray-400 truncate">
+            <span class="text-xs font-semibold uppercase tracking-wider
+                         text-gray-500 dark:text-gray-400 break-words">
                 {{ $label }}
             </span>
             <span class="text-3xl font-bold text-gray-900 dark:text-white tabular-nums leading-none mt-1">
