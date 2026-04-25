@@ -419,14 +419,14 @@ class TodoController extends Controller
             $previousExp = (int) ($user?->total_exp ?? 0);
             $previousRank = (string) ($user?->current_rank ?? '');
 
-             $todo->update([
+            $todo->update([
                 'completed' => !$todo->completed,
             ]);
 
             $todo->refresh();
 
             if ($user) {
-                $user = User::query()->find($user->id);
+                $user->refresh();
             }
 
             $currentExp = (int) ($user?->total_exp ?? $previousExp);
